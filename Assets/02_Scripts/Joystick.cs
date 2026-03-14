@@ -14,13 +14,13 @@ public class Joystick : MonoBehaviour, IDragHandler, IPointerDownHandler, IPoint
         Vector2 position = Vector2.zero;
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(background, eventData.position, eventData.pressEventCamera, out position))
         {
-            position.x = (position.x / background.sizeDelta.x);
-            position.y = (position.y / background.sizeDelta.y);
+            position.x = -(position.x / background.sizeDelta.x);
+            position.y = -(position.y / background.sizeDelta.y);
 
             InputDirection = new Vector2(position.x * 2, position.y * 2);
             InputDirection = (InputDirection.magnitude > 1.0f) ? InputDirection.normalized : InputDirection;
 
-            handle.anchoredPosition = new Vector2(InputDirection.x * (background.sizeDelta.x / 2), InputDirection.y * (background.sizeDelta.y / 2));
+            handle.anchoredPosition = new Vector2(InputDirection.x * -(background.sizeDelta.x / 2), InputDirection.y * -(background.sizeDelta.y / 2));
         }
     }
 

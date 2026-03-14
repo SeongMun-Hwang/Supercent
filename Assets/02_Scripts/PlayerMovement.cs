@@ -11,18 +11,32 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float rotationSpeed = 10f;
 
     private CharacterController _characterController;
+    private Transform _cameraTransform;
 
     private void Awake()
     {
         _characterController = GetComponent<CharacterController>();
+        if (Camera.main != null)
+        {
+            _cameraTransform = Camera.main.transform;
+        }
     }
 
     private void Update()
     {
-        if (joystick == null) return;
+        if (joystick == null || _cameraTransform == null) return;
 
         Vector2 input = joystick.InputDirection;
-        Vector3 moveDirection = new Vector3(input.x, 0, input.y);
+        
+        // Calculate camera-relative direction
+        Vector3 forward = _cameraTransform.forward;
+        Vector3 right = _cameraTransform.right;
+        forward.y = 0f;
+        right.y = 0f;
+        forward.Normalize();
+        right.Normalize();
+
+        Vector3 moveDirection = (forward * input.y) + (right * input.x);
 
         if (moveDirection.magnitude > 0.1f)
         {
