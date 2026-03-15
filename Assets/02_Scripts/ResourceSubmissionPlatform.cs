@@ -9,6 +9,12 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
     [SerializeField] private int targetAmount = 100;
     [SerializeField] private bool isRepeatable = true;
     
+    [Header("Converter Settings")]
+    [SerializeField] private bool isConverter = false; // 변환기 모드 여부
+    [SerializeField] private string outputResourceName = "Steel"; // 변환 결과물 이름
+    [SerializeField] private GameObject outputArea; // 자원이 쌓일 자식 오브젝트
+    [SerializeField] private TMP_Text outputAmountText; // 변환된 수량 표시 TMP
+
     [Header("Speed Settings")]
     [SerializeField] private float playerToPlatformInterval = 0.05f; 
     [SerializeField] private float platformToTargetInterval = 0.1f;
@@ -21,6 +27,7 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
     [Header("Current Progress")]
     [SerializeField] private int currentAmount = 0; 
     [SerializeField] private int heldAmount = 0;    
+    [SerializeField] private int convertedAmount = 0; // 변환 완료되어 쌓인 양
 
     [Header("Events")]
     public UnityEvent OnTargetReached;
@@ -28,7 +35,16 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
     private float _transferTimer;
     private float _processTimer;
     private bool _isCompleted = false;
-    private bool _isPlayerOnPlatform = false; // 플레이어 접촉 상태 확인용
+    private bool _isPlayerOnPlatform = false;
+
+    private void Awake()
+    {
+        // 변환기 모드가 아니면 출력 구역 비활성화
+        if (outputArea != null)
+        {
+            outputArea.SetActive(isConverter);
+        }
+    }
 
     private void Start()
     {
@@ -40,10 +56,10 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         // 플레이어가 자원을 옮길 수 있는 상태인지 체크
         bool isTransferring = _isPlayerOnPlatform && PlayerStats.Instance != null && PlayerStats.Instance.GetResourceCount(resourceName) > 0;
         
-        // 반복 불가 미션인데 이미 목표치만큼 가져왔다면 전송 중이 아닌 것으로 간주
-        if (!isRepeatable && (currentAmount + heldAmount) >= targetAmount) isTransferring = false;
+        // 반복 불가 미션인데 이미 목표치만큼 가져왔다면 전송 중이 아닌 것으로 간주 (변환기는 제외)
+        if (!isConverter && !isRepeatable && (currentAmount + heldAmount) >= targetAmount) isTransferring = false;
 
-        // "자원이 이동 중일 때"가 아닐 때만 최종 제출(Process) 진행
+        // "자원이 이동 중일 때"가 아닐 때만 최종 제출/변환 진행
         if (!_isCompleted && heldAmount > 0 && !isTransferring)
         {
             _processTimer += Time.deltaTime;
@@ -66,7 +82,6 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
     {
         if (_isCompleted && !isRepeatable) return;
 
-        // 플레이어 -> 플랫폼 저장소 (Transfer)
         _transferTimer += Time.deltaTime;
         if (_transferTimer >= playerToPlatformInterval)
         {
@@ -85,13 +100,13 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         if (PlayerStats.Instance == null) return;
 
         int maxCanTake = targetAmount - (currentAmount + heldAmount);
-        if (!isRepeatable && maxCanTake <= 0) return;
+        if (!isConverter && !isRepeatable && maxCanTake <= 0) return;
 
         int playerHas = PlayerStats.Instance.GetResourceCount(resourceName);
         if (playerHas > 0)
         {
             int amountToTake = Mathf.Min(playerHas, transferBatchSize);
-            if (!isRepeatable) amountToTake = Mathf.Min(amountToTake, maxCanTake);
+            if (!isConverter && !isRepeatable) amountToTake = Mathf.Min(amountToTake, maxCanTake);
 
             PlayerStats.Instance.SpendResource(resourceName, amountToTake);
             heldAmount += amountToTake;
@@ -105,14 +120,21 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         if (heldAmount > 0)
         {
             heldAmount--;
-            currentAmount++;
+            
+            if (isConverter)
+            {
+                convertedAmount++; // 변환기로 작동 시 결과물 버퍼에 쌓음
+            }
+            else
+            {
+                currentAmount++; // 일반 제출기로 작동
+                if (currentAmount >= targetAmount)
+                {
+                    CompleteSubmission();
+                }
+            }
             
             UpdateProgressTexts();
-
-            if (currentAmount >= targetAmount)
-            {
-                CompleteSubmission();
-            }
         }
     }
 
@@ -136,7 +158,7 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         UpdateProgressTexts();
     }
 
-    private void UpdateProgressTexts()
+    public void UpdateProgressTexts()
     {
         if (heldAmountText != null)
         {
@@ -145,13 +167,46 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
 
         if (remainingAmountText != null)
         {
-            int remaining = targetAmount - currentAmount;
-            if (remaining < 0) remaining = 0;
-
-            if (_isCompleted && !isRepeatable)
-                remainingAmountText.text = "OK";
+            if (isConverter)
+            {
+                remainingAmountText.text = "CONVERTING";
+            }
             else
-                remainingAmountText.text = $"{remaining}";
+            {
+                int remaining = targetAmount - currentAmount;
+                if (remaining < 0) remaining = 0;
+
+                if (_isCompleted && !isRepeatable)
+                    remainingAmountText.text = "OK";
+                else
+                    remainingAmountText.text = $"{remaining}";
+            }
+        }
+
+        if (outputAmountText != null)
+        {
+            outputAmountText.text = convertedAmount > 0 ? $"{convertedAmount}" : "EMPTY";
+        }
+    }
+
+    public void CollectConvertedResources()
+    {
+        // 이 함수는 기존처럼 한꺼번에 수령할 때 사용하거나 제거 가능
+        if (convertedAmount > 0 && PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.AddResource(outputResourceName, convertedAmount);
+            convertedAmount = 0;
+            UpdateProgressTexts();
+        }
+    }
+
+    public void TryCollectOneResource()
+    {
+        if (convertedAmount > 0 && PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.AddResource(outputResourceName, 1);
+            convertedAmount--;
+            UpdateProgressTexts();
         }
     }
 
@@ -159,6 +214,7 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
     {
         currentAmount = 0;
         heldAmount = 0;
+        convertedAmount = 0;
         _isCompleted = false;
         UpdateProgressTexts();
     }
