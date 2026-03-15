@@ -22,7 +22,7 @@ public class ResourcePickup : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            Debug.Log($"[Pickup] Player Detected: {other.name}");
+            Debug.Log($"[ResourcePickup] Player ENTERED: {other.name}");
             _isPlayerInside = true;
             _timer = 0;
         }
@@ -30,7 +30,6 @@ public class ResourcePickup : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
-        // Tag 체크를 Stay에서도 수행 (안정성)
         if (other.CompareTag("Player") && _parentPlatform != null)
         {
             _isPlayerInside = true;
@@ -39,6 +38,7 @@ public class ResourcePickup : MonoBehaviour
             if (_timer >= collectInterval)
             {
                 _timer = 0;
+                Debug.Log($"[ResourcePickup] Attempting to collect 1 unit from {_parentPlatform.gameObject.name}...");
                 _parentPlatform.TryCollectOneResource();
             }
         }
@@ -48,7 +48,7 @@ public class ResourcePickup : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            Debug.Log($"[Pickup] Player Exited");
+            Debug.Log($"[ResourcePickup] Player EXITED: {other.name}");
             _isPlayerInside = false;
         }
     }

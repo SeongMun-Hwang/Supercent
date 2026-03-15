@@ -18,6 +18,9 @@ public class PlayerStats : MonoBehaviour
         else Destroy(gameObject);
     }
 
+    [Header("Visuals")]
+    [SerializeField] private ResourceStack visualStack;
+
     public void AddResource(string resourceName, int amount)
     {
         if (_inventory.ContainsKey(resourceName))
@@ -28,6 +31,16 @@ public class PlayerStats : MonoBehaviour
         {
             _inventory.Add(resourceName, amount);
         }
+
+        // Visual Stacking
+        if (visualStack != null)
+        {
+            for (int i = 0; i < amount; i++)
+            {
+                visualStack.Add(resourceName);
+            }
+        }
+        
         Debug.Log($"Inventory: {resourceName} = {_inventory[resourceName]}");
     }
 
@@ -41,6 +54,15 @@ public class PlayerStats : MonoBehaviour
         if (_inventory.ContainsKey(resourceName))
         {
             _inventory[resourceName] -= amount;
+
+            // Visual Stacking
+            if (visualStack != null)
+            {
+                for (int i = 0; i < amount; i++)
+                {
+                    visualStack.Remove();
+                }
+            }
         }
     }
 

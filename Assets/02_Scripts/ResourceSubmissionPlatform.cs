@@ -24,6 +24,10 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
     [SerializeField] private TMP_Text heldAmountText;      
     [SerializeField] private TMP_Text remainingAmountText; 
 
+    [Header("Visual Stacking")]
+    [SerializeField] private ResourceStack heldStack;   // 플랫폼에 쌓이는 자원 시각화
+    [SerializeField] private ResourceStack outputStack; // 변환된 자원 시각화
+
     [Header("Current Progress")]
     [SerializeField] private int currentAmount = 0; 
     [SerializeField] private int heldAmount = 0;    
@@ -110,6 +114,11 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
 
             PlayerStats.Instance.SpendResource(resourceName, amountToTake);
             heldAmount += amountToTake;
+
+            if (heldStack != null)
+            {
+                for (int i = 0; i < amountToTake; i++) heldStack.Add(resourceName);
+            }
             
             UpdateProgressTexts();
         }
@@ -120,10 +129,12 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         if (heldAmount > 0)
         {
             heldAmount--;
+            if (heldStack != null) heldStack.Remove();
             
             if (isConverter)
             {
-                convertedAmount++; // 변환기로 작동 시 결과물 버퍼에 쌓음
+                convertedAmount++; 
+                if (outputStack != null) outputStack.Add(outputResourceName);
             }
             else
             {
@@ -152,6 +163,7 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         {
             _isCompleted = true;
             heldAmount = 0;
+            if (heldStack != null) heldStack.Clear();
             currentAmount = targetAmount;
         }
         
@@ -188,27 +200,48 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
             outputAmountText.text = convertedAmount > 0 ? $"{convertedAmount}" : "EMPTY";
         }
     }
-
-    public void CollectConvertedResources()
+public void CollectConvertedResources()
+{
+    Debug.Log($"[SubmissionPlatform] CollectConvertedResources called. Amount: {convertedAmount}");
+    if (convertedAmount > 0 && PlayerStats.Instance != null)
     {
-        // 이 함수는 기존처럼 한꺼번에 수령할 때 사용하거나 제거 가능
-        if (convertedAmount > 0 && PlayerStats.Instance != null)
-        {
-            PlayerStats.Instance.AddResource(outputResourceName, convertedAmount);
-            convertedAmount = 0;
-            UpdateProgressTexts();
-        }
+        PlayerStats.Instance.AddResource(outputResourceName, convertedAmount);
+        convertedAmount = 0;
+        if (outputStack != null) outputStack.Clear();
+        UpdateProgressTexts();
+        Debug.Log($"[SubmissionPlatform] Bulk collected {outputResourceName}.");
     }
-
-    public void TryCollectOneResource()
+    else if (PlayerStats.Instance == null)
     {
-        if (convertedAmount > 0 && PlayerStats.Instance != null)
+        Debug.LogError("[SubmissionPlatform] PlayerStats.Instance is NULL during bulk collection!");
+    }
+}
+
+public void TryCollectOneResource()
+{
+    Debug.Log($"[SubmissionPlatform] TryCollectOneResource called. Current convertedAmount: {convertedAmount}");
+
+    if (convertedAmount > 0)
+    {
+        if (PlayerStats.Instance != null)
         {
             PlayerStats.Instance.AddResource(outputResourceName, 1);
             convertedAmount--;
+            if (outputStack != null) outputStack.Remove();
             UpdateProgressTexts();
+            Debug.Log($"[SubmissionPlatform] Successfully collected 1 {outputResourceName}. Remaining in buffer: {convertedAmount}");
+        }
+        else
+        {
+            Debug.LogError("[SubmissionPlatform] PlayerStats.Instance is NULL during incremental collection!");
         }
     }
+    else
+    {
+        Debug.LogWarning("[SubmissionPlatform] No resources to collect (convertedAmount is 0).");
+    }
+}
+
 
     public void ResetProgress()
     {
@@ -216,6 +249,8 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         heldAmount = 0;
         convertedAmount = 0;
         _isCompleted = false;
+        if (heldStack != null) heldStack.Clear();
+        if (outputStack != null) outputStack.Clear();
         UpdateProgressTexts();
     }
 }
