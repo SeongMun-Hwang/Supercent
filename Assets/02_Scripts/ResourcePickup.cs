@@ -3,14 +3,12 @@ using UnityEngine;
 public class ResourcePickup : MonoBehaviour
 {
     [SerializeField] private float collectInterval = 0.1f; // 수령 간격
+    [SerializeField] ResourceSubmissionPlatform resourceSubmissionPlatform;
     private float _timer;
-    private ResourceSubmissionPlatform _parentPlatform;
     private bool _isPlayerInside;
 
     private void Awake()
-    {
-        _parentPlatform = GetComponentInParent<ResourceSubmissionPlatform>();
-        
+    {        
         // 보장: 트리거 설정
         Collider col = GetComponent<Collider>();
         if (col != null) col.isTrigger = true;
@@ -30,7 +28,7 @@ public class ResourcePickup : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
-        if (other.CompareTag("Player") && _parentPlatform != null)
+        if (other.CompareTag("Player") && resourceSubmissionPlatform != null)
         {
             _isPlayerInside = true;
             _timer += Time.deltaTime;
@@ -38,8 +36,8 @@ public class ResourcePickup : MonoBehaviour
             if (_timer >= collectInterval)
             {
                 _timer = 0;
-                Debug.Log($"[ResourcePickup] Attempting to collect 1 unit from {_parentPlatform.gameObject.name}...");
-                _parentPlatform.TryCollectOneResource();
+                Debug.Log($"[ResourcePickup] Attempting to collect 1 unit from {resourceSubmissionPlatform.gameObject.name}...");
+                resourceSubmissionPlatform.TryCollectOneResource();
             }
         }
     }
