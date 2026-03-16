@@ -72,7 +72,7 @@ public class ResourceStack : MonoBehaviour
                     float zOffset = -(groupIdx + 1) * spacing;
                     
                     group.visuals[i].transform.localPosition = new Vector3(0, yOffset, zOffset);
-                    group.visuals[i].transform.localRotation = Quaternion.identity;
+                    //group.visuals[i].transform.localRotation = Quaternion.identity;
                 }
                 else
                 {
@@ -81,7 +81,7 @@ public class ResourceStack : MonoBehaviour
                     for (int j = 0; j < groupIdx; j++) totalBefore += _groups[j].visuals.Count;
                     
                     group.visuals[i].transform.localPosition = new Vector3(0, (totalBefore + i) * spacing, 0);
-                    group.visuals[i].transform.localRotation = Quaternion.identity;
+                    //group.visuals[i].transform.localRotation = Quaternion.identity;
                 }
             }
         }

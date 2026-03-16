@@ -27,25 +27,30 @@ public class PlayerStats : MonoBehaviour
 
     public void AddResource(string resourceName, int amount)
     {
-        if (_inventory.ContainsKey(resourceName))
-        {
-            _inventory[resourceName] += amount;
-        }
-        else
-        {
-            _inventory.Add(resourceName, amount);
-        }
+        int current = GetResourceCount(resourceName);
 
-        // Visual Stacking
+        int max = 10;
+        if (ResourceDatabase.Instance != null)
+            max = ResourceDatabase.Instance.GetMaxCount(resourceName);
+
+        int canAdd = Mathf.Clamp(amount, 0, max - current);
+
+        if (canAdd <= 0) return;
+
+        if (_inventory.ContainsKey(resourceName))
+            _inventory[resourceName] += canAdd;
+        else
+            _inventory.Add(resourceName, canAdd);
+
         if (visualStack != null)
         {
-            for (int i = 0; i < amount; i++)
+            for (int i = 0; i < canAdd; i++)
             {
                 visualStack.Add(resourceName);
             }
         }
-        
-        Debug.Log($"Inventory: {resourceName} = {_inventory[resourceName]}");
+
+        Debug.Log($"Inventory: {resourceName} = {_inventory[resourceName]} / {max}");
     }
 
     public int GetResourceCount(string resourceName)

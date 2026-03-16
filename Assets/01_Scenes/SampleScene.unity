@@ -1297,8 +1297,10 @@ MonoBehaviour:
   resourceList:
   - name: Iron
     prefab: {fileID: 7507439959683586133, guid: 5c6650cb18f0c9b429324e6e294adfb0, type: 3}
+    maxCount: 10
   - name: Steel
-    prefab: {fileID: 7507439959683586133, guid: 353ccba6f05de3e4a958a923dab46f58, type: 3}
+    prefab: {fileID: 129803291220440121, guid: 943c4aa1444c89642b48704f2324baf2, type: 3}
+    maxCount: 10
 --- !u!4 &720561126
 Transform:
   m_ObjectHideFlags: 0
@@ -2205,7 +2207,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mode: 0
-  spacing: 0.5
+  spacing: 0.25
   root: {fileID: 1354968522}
 --- !u!1 &1362111274
 GameObject:
@@ -2467,6 +2469,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   attackPower: 20
+  attackSpeed: 1
   equipmentRoot: {fileID: 374172478}
   visualStack: {fileID: 1471076788}
 --- !u!54 &1471076787
@@ -2509,7 +2512,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mode: 1
-  spacing: 0.5
+  spacing: 0.25
   root: {fileID: 1021970500}
 --- !u!1 &1554306340
 GameObject:
@@ -2564,15 +2567,15 @@ MonoBehaviour:
   upgradeSteps:
   - resourceName: Steel
     targetAmount: 10
-    equipmentPrefab: {fileID: 4596246561328754942, guid: 4010d67d0e9ca904db591f0c5ede8268, type: 3}
+    equipmentPrefab: {fileID: 3023627955911239046, guid: 6e3bc0519fc2f934d93cd1114dde433a, type: 3}
     attackPower: 30
   - resourceName: Steel
     targetAmount: 20
-    equipmentPrefab: {fileID: 4596246561328754942, guid: 45ddc3bee53755149bd50a30d63c343c, type: 3}
+    equipmentPrefab: {fileID: 3023627955911239046, guid: cd6f3110d718d2048b976a8444affbc0, type: 3}
     attackPower: 40
   - resourceName: Steel
     targetAmount: 40
-    equipmentPrefab: {fileID: 4596246561328754942, guid: 8d6be8e4d02f31944b88766642ce1418, type: 3}
+    equipmentPrefab: {fileID: 3023627955911239046, guid: 1faec507404e1de4ca21d21e48ce74b2, type: 3}
     attackPower: 60
   currentStepIndex: 0
   playerToPlatformInterval: 0.05
@@ -3231,7 +3234,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mode: 0
-  spacing: 0.5
+  spacing: 0.25
   root: {fileID: 1945499519}
 --- !u!4 &1963165298 stripped
 Transform:
