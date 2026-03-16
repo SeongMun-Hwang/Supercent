@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 public class ResourceStack : MonoBehaviour
 {
@@ -8,91 +9,90 @@ public class ResourceStack : MonoBehaviour
     [SerializeField] private float spacing = 0.5f; 
     [SerializeField] private Transform root;
 
-    [Header("Grid Settings (for BehindPlayer)")]
-    [SerializeField] private int gridWidth = 3;  // 가로 칸수
-    [SerializeField] private int gridDepth = 1;  // 세로(뒤로) 칸수
+    private class ResourceGroup
+    {
+        public string name;
+        public List<GameObject> visuals = new List<GameObject>();
+    }
 
-    private List<GameObject> _visuals = new List<GameObject>();
+    private List<ResourceGroup> _groups = new List<ResourceGroup>();
 
     public void Add(string resourceName)
     {
         if (ResourceDatabase.Instance == null) return;
         
         GameObject prefab = ResourceDatabase.Instance.GetPrefab(resourceName);
-        if (prefab == null) 
+        if (prefab == null) return;
+
+        ResourceGroup group = _groups.Find(g => g.name == resourceName);
+        if (group == null)
         {
-            Debug.LogWarning($"[Stack] No prefab found for resource: {resourceName}. Check ResourceDatabase!");
-            return;
+            group = new ResourceGroup { name = resourceName };
+            if (mode == StackMode.BehindPlayer) _groups.Insert(0, group);
+            else _groups.Add(group);
         }
 
         GameObject obj = Instantiate(prefab, root != null ? root : transform);
-        obj.name = resourceName; // 디버깅용 이름 설정
+        group.visuals.Add(obj);
         
-        if (mode == StackMode.Upward)
-        {
-            obj.transform.localPosition = new Vector3(0, _visuals.Count * spacing, 0);
-            obj.transform.localRotation = Quaternion.identity;
-            _visuals.Add(obj);
-        }
-        else
-        {
-            // 신규 자원을 리스트의 맨 앞에 추가 (플레이어와 가장 가깝게)
-            _visuals.Insert(0, obj);
-            UpdateLayout();
-        }
+        UpdateLayout();
     }
 
-    public void Remove()
+    public void Remove(string resourceName)
     {
-        if (_visuals.Count == 0) return;
+        ResourceGroup group = _groups.Find(g => g.name == resourceName);
+        if (group == null || group.visuals.Count == 0) return;
 
-        int index = mode == StackMode.Upward ? _visuals.Count - 1 : 0;
-        GameObject obj = _visuals[index];
-        _visuals.RemoveAt(index);
+        GameObject obj = group.visuals[group.visuals.Count - 1];
+        group.visuals.RemoveAt(group.visuals.Count - 1);
         if (obj != null) Destroy(obj);
 
-        if (mode == StackMode.BehindPlayer) UpdateLayout();
+        if (group.visuals.Count == 0)
+        {
+            _groups.Remove(group);
+        }
+
+        UpdateLayout();
     }
 
     private void UpdateLayout()
     {
-        for (int i = 0; i < _visuals.Count; i++)
+        for (int groupIdx = 0; groupIdx < _groups.Count; groupIdx++)
         {
-            if (_visuals[i] == null) continue;
-
-            if (mode == StackMode.BehindPlayer)
+            var group = _groups[groupIdx];
+            for (int i = 0; i < group.visuals.Count; i++)
             {
-                // 그리드 좌표 계산
-                // x: 좌우, y: 위아래, z: 앞뒤
-                int layerSize = gridWidth * gridDepth;
-                int layer = i / layerSize; // 몇 층인지
-                int posInLayer = i % layerSize; // 해당 층에서 몇 번째인지
-                
-                int xPos = posInLayer % gridWidth; // 가로 위치
-                int zPos = posInLayer / gridWidth; // 세로 위치
+                if (group.visuals[i] == null) continue;
 
-                // 중앙 정렬을 위한 X 오프셋 계산
-                float xOffset = (xPos - (gridWidth - 1) / 2f) * spacing;
-                float yOffset = layer * spacing;
-                float zOffset = -(zPos + 1) * spacing;
-
-                _visuals[i].transform.localPosition = new Vector3(xOffset, yOffset, zOffset);
-                _visuals[i].transform.localRotation = Quaternion.identity;
-            }
-            else
-            {
-                _visuals[i].transform.localPosition = new Vector3(0, i * spacing, 0);
-                _visuals[i].transform.localRotation = Quaternion.identity;
+                if (mode == StackMode.BehindPlayer)
+                {
+                    // groupIdx: 플레이어 뒤로 몇 번째 줄인지
+                    // i: 위로 몇 번째인지
+                    float yOffset = i * spacing;
+                    float zOffset = -(groupIdx + 1) * spacing;
+                    
+                    group.visuals[i].transform.localPosition = new Vector3(0, yOffset, zOffset);
+                    group.visuals[i].transform.localRotation = Quaternion.identity;
+                }
+                else
+                {
+                    // Upward 모드일 경우 모든 자원을 하나의 수직 기둥으로 합쳐서 표시
+                    int totalBefore = 0;
+                    for (int j = 0; j < groupIdx; j++) totalBefore += _groups[j].visuals.Count;
+                    
+                    group.visuals[i].transform.localPosition = new Vector3(0, (totalBefore + i) * spacing, 0);
+                    group.visuals[i].transform.localRotation = Quaternion.identity;
+                }
             }
         }
     }
-    
+
     public void Clear()
     {
-        foreach (var v in _visuals)
+        foreach (var group in _groups)
         {
-            if (v != null) Destroy(v);
+            foreach (var v in group.visuals) if (v != null) Destroy(v);
         }
-        _visuals.Clear();
+        _groups.Clear();
     }
 }

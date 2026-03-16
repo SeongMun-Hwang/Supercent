@@ -129,7 +129,7 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         if (heldAmount > 0)
         {
             heldAmount--;
-            if (heldStack != null) heldStack.Remove();
+            if (heldStack != null) heldStack.Remove(resourceName); // Update: pass name
             
             if (isConverter)
             {
@@ -200,47 +200,48 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
             outputAmountText.text = convertedAmount > 0 ? $"{convertedAmount}" : "EMPTY";
         }
     }
-public void CollectConvertedResources()
-{
-    Debug.Log($"[SubmissionPlatform] CollectConvertedResources called. Amount: {convertedAmount}");
-    if (convertedAmount > 0 && PlayerStats.Instance != null)
-    {
-        PlayerStats.Instance.AddResource(outputResourceName, convertedAmount);
-        convertedAmount = 0;
-        if (outputStack != null) outputStack.Clear();
-        UpdateProgressTexts();
-        Debug.Log($"[SubmissionPlatform] Bulk collected {outputResourceName}.");
-    }
-    else if (PlayerStats.Instance == null)
-    {
-        Debug.LogError("[SubmissionPlatform] PlayerStats.Instance is NULL during bulk collection!");
-    }
-}
 
-public void TryCollectOneResource()
-{
-    Debug.Log($"[SubmissionPlatform] TryCollectOneResource called. Current convertedAmount: {convertedAmount}");
-
-    if (convertedAmount > 0)
+    public void CollectConvertedResources()
     {
-        if (PlayerStats.Instance != null)
+        Debug.Log($"[SubmissionPlatform] CollectConvertedResources called. Amount: {convertedAmount}");
+        if (convertedAmount > 0 && PlayerStats.Instance != null)
         {
-            PlayerStats.Instance.AddResource(outputResourceName, 1);
-            convertedAmount--;
-            if (outputStack != null) outputStack.Remove();
+            PlayerStats.Instance.AddResource(outputResourceName, convertedAmount);
+            convertedAmount = 0;
+            if (outputStack != null) outputStack.Clear();
             UpdateProgressTexts();
-            Debug.Log($"[SubmissionPlatform] Successfully collected 1 {outputResourceName}. Remaining in buffer: {convertedAmount}");
+            Debug.Log($"[SubmissionPlatform] Bulk collected {outputResourceName}.");
+        }
+        else if (PlayerStats.Instance == null)
+        {
+            Debug.LogError("[SubmissionPlatform] PlayerStats.Instance is NULL during bulk collection!");
+        }
+    }
+
+    public void TryCollectOneResource()
+    {
+        Debug.Log($"[SubmissionPlatform] TryCollectOneResource called. Current convertedAmount: {convertedAmount}");
+
+        if (convertedAmount > 0)
+        {
+            if (PlayerStats.Instance != null)
+            {
+                PlayerStats.Instance.AddResource(outputResourceName, 1);
+                convertedAmount--;
+                if (outputStack != null) outputStack.Remove(outputResourceName); // Update: pass name
+                UpdateProgressTexts();
+                Debug.Log($"[SubmissionPlatform] Successfully collected 1 {outputResourceName}. Remaining in buffer: {convertedAmount}");
+            }
+            else
+            {
+                Debug.LogError("[SubmissionPlatform] PlayerStats.Instance is NULL during incremental collection!");
+            }
         }
         else
         {
-            Debug.LogError("[SubmissionPlatform] PlayerStats.Instance is NULL during incremental collection!");
+            Debug.LogWarning("[SubmissionPlatform] No resources to collect (convertedAmount is 0).");
         }
     }
-    else
-    {
-        Debug.LogWarning("[SubmissionPlatform] No resources to collect (convertedAmount is 0).");
-    }
-}
 
 
     public void ResetProgress()

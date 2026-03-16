@@ -9,6 +9,9 @@ public class PlayerStats : MonoBehaviour
     [Header("Combat Stats")]
     public float attackPower = 20f;
 
+    [Header("Equipment")]
+    public Transform equipmentRoot; // 장비가 부착될 위치
+
     [Header("Inventory")]
     private Dictionary<string, int> _inventory = new Dictionary<string, int>();
 
@@ -53,6 +56,7 @@ public class PlayerStats : MonoBehaviour
     {
         if (_inventory.ContainsKey(resourceName))
         {
+            Debug.Log($"[PlayerStats] Spending {amount} x {resourceName}");
             _inventory[resourceName] -= amount;
 
             // Visual Stacking
@@ -60,7 +64,7 @@ public class PlayerStats : MonoBehaviour
             {
                 for (int i = 0; i < amount; i++)
                 {
-                    visualStack.Remove();
+                    visualStack.Remove(resourceName);
                 }
             }
         }
