@@ -133,11 +133,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   resourceName: Iron
-  maxHealth: 60
-  harvestAmount: 10
+  maxHealth: 20
+  harvestAmount: 1
   harvestInterval: 1
   respawnTime: 2
   visualStack: {fileID: 0}
+  animator: {fileID: 0}
 --- !u!95 &5869197482329598654
 Animator:
   serializedVersion: 5

@@ -55,7 +55,7 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
         _timer = 0;
 
         if (animator != null)
-            animator.SetTrigger("Collect");
+            //animator.SetTrigger("Collect");
         Debug.Log($"[Resource] Started harvesting {resourceName}...");
     }
 
