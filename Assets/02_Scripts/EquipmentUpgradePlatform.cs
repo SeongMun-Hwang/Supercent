@@ -48,20 +48,53 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
 
         UpgradeStep currentStep = upgradeSteps[currentStepIndex];
         
-        bool isTransferring = _isPlayerOnPlatform && PlayerStats.Instance != null && 
+        bool canTransfer = _isPlayerOnPlatform && PlayerStats.Instance != null && 
                              PlayerStats.Instance.GetResourceCount(currentStep.resourceName) > 0;
         
-        if ((currentStepAmount + heldAmount) >= currentStep.targetAmount) isTransferring = false;
+        if ((currentStepAmount + heldAmount) >= currentStep.targetAmount) canTransfer = false;
 
-        if (!_isCompleted && heldAmount > 0 && !isTransferring)
+        if (!_isCompleted && heldAmount > 0)
         {
-            _processTimer += Time.deltaTime;
-            if (_processTimer >= platformToTargetInterval)
+            // 플레이어가 자원을 더 이상 전송할 수 없거나 플랫폼 밖에 있을 때 즉시 처리
+            if (!canTransfer)
             {
-                _processTimer = 0;
-                ProcessTowardsStep();
+                InstantProcessToTarget();
+            }
+            else
+            {
+                _processTimer += Time.deltaTime;
+                if (_processTimer >= platformToTargetInterval)
+                {
+                    _processTimer = 0;
+                    ProcessTowardsStep();
+                }
             }
         }
+    }
+
+    private void InstantProcessToTarget()
+    {
+        UpgradeStep currentStep = upgradeSteps[currentStepIndex];
+        int needed = currentStep.targetAmount - currentStepAmount;
+        int amountToProcess = Mathf.Min(heldAmount, needed);
+
+        heldAmount -= amountToProcess;
+        currentStepAmount += amountToProcess;
+
+        if (currentStepAmount >= currentStep.targetAmount)
+        {
+            ApplyUpgrade(currentStep);
+            currentStepIndex++;
+            currentStepAmount = 0;
+            
+            if (currentStepIndex >= upgradeSteps.Count)
+            {
+                _isCompleted = true;
+                gameObject.SetActive(false);
+                return;
+            }
+        }
+        UpdateUI();
     }
 
     public void OnPlayerEnter(GameObject player)

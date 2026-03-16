@@ -8,12 +8,15 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private int harvestAmount = 10;
     [SerializeField] private float harvestInterval = 1.0f;
-    
+
     [Header("Respawn Settings")]
     [SerializeField] private float respawnTime = 5f;
 
     [Header("Visual Stacking")]
     [SerializeField] private ResourceStack visualStack;
+
+    [Header("Animations")]
+    [SerializeField] private Animator animator; // 자원 애니메이터
 
     private float _currentHealth;
     private bool _isHarvested = false;
@@ -25,6 +28,9 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
     {
         _currentHealth = maxHealth;
         _renderers = GetComponentsInChildren<MeshRenderer>();
+
+        // 애니메이터가 할당되지 않았다면 자식 오브젝트에서 찾기
+        if (animator == null) animator = GetComponentInChildren<Animator>();
     }
 
     private void Start()
@@ -38,9 +44,7 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
         if (visualStack != null)
         {
             visualStack.Clear();
-            // Show resources based on current health / damage per hit
-            // For simplicity, let's show a fixed number or based on health
-            int count = Mathf.Max(1, Mathf.RoundToInt(maxHealth / 20f)); 
+            int count = Mathf.Max(1, Mathf.RoundToInt(maxHealth / 20f));
             for (int i = 0; i < count; i++) visualStack.Add(resourceName);
         }
     }
@@ -57,18 +61,24 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
         if (_isHarvested) return;
 
         _timer += Time.deltaTime;
-        
-        if (_timer >= harvestInterval)
+
+        // 플레이어의 공격 속도(간격)를 가져옵니다. 없을 경우 기본값(harvestInterval) 사용.
+        float currentInterval = (PlayerStats.Instance != null) ? PlayerStats.Instance.attackSpeed : harvestInterval;
+
+        if (_timer >= currentInterval)
         {
             _timer = 0;
-            
+
             float damage = (PlayerStats.Instance != null) ? PlayerStats.Instance.attackPower : 10f;
             if (damage <= 0) damage = 10f;
 
             _currentHealth -= damage;
-            
-            // Visual feedback: remove a block if health crosses a threshold
-            // if (visualStack != null) visualStack.Remove(); 
+
+            // 대미지 입을 때 애니메이션 실행
+            if (animator != null)
+            {
+                animator.SetTrigger("Collect");
+            }
 
             Debug.Log($"[Resource] {resourceName} Health: {_currentHealth}");
 
@@ -110,7 +120,7 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
 
         SetVisualsActive(true);
         InitializeVisuals();
-        
+
         Debug.Log($"[Resource] {resourceName} has respawned!");
     }
 

@@ -8,6 +8,7 @@ public class PlayerStats : MonoBehaviour
 
     [Header("Combat Stats")]
     public float attackPower = 20f;
+    public float attackSpeed = 1.0f; // 공격 간격 (초)
 
     [Header("Equipment")]
     public Transform equipmentRoot; // 장비가 부착될 위치
