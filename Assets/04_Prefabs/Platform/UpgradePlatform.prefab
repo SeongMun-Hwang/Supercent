@@ -136,15 +136,21 @@ MonoBehaviour:
   - resourceName: Steel
     targetAmount: 10
     equipmentPrefab: {fileID: 3023627955911239046, guid: 6e3bc0519fc2f934d93cd1114dde433a, type: 3}
-    attackPower: 30
+    addAttackPower: 0
+    addMaxCapacity: 0
+    addAttackSpeed: 0
   - resourceName: Gold
     targetAmount: 20
     equipmentPrefab: {fileID: 3023627955911239046, guid: cd6f3110d718d2048b976a8444affbc0, type: 3}
-    attackPower: 40
+    addAttackPower: 0
+    addMaxCapacity: 0
+    addAttackSpeed: 0
   - resourceName: Gold
     targetAmount: 40
     equipmentPrefab: {fileID: 3023627955911239046, guid: 1faec507404e1de4ca21d21e48ce74b2, type: 3}
-    attackPower: 60
+    addAttackPower: 0
+    addMaxCapacity: 0
+    addAttackSpeed: 0
   currentStepIndex: 0
   playerToPlatformInterval: 0.05
   platformToTargetInterval: 0.1
@@ -292,15 +298,21 @@ MonoBehaviour:
   - resourceName: Steel
     targetAmount: 10
     equipmentPrefab: {fileID: 3023627955911239046, guid: 6e3bc0519fc2f934d93cd1114dde433a, type: 3}
-    attackPower: 30
+    addAttackPower: 0
+    addMaxCapacity: 0
+    addAttackSpeed: 0
   - resourceName: Gold
     targetAmount: 20
     equipmentPrefab: {fileID: 3023627955911239046, guid: cd6f3110d718d2048b976a8444affbc0, type: 3}
-    attackPower: 40
+    addAttackPower: 0
+    addMaxCapacity: 0
+    addAttackSpeed: 0
   - resourceName: Gold
     targetAmount: 40
     equipmentPrefab: {fileID: 3023627955911239046, guid: 1faec507404e1de4ca21d21e48ce74b2, type: 3}
-    attackPower: 60
+    addAttackPower: 0
+    addMaxCapacity: 0
+    addAttackSpeed: 0
   currentStepIndex: 0
   playerToPlatformInterval: 0.05
   platformToTargetInterval: 0.1

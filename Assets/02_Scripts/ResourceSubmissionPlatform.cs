@@ -11,10 +11,10 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
     [SerializeField] private bool isRepeatable = true;
     
     [Header("Converter Settings")]
-    [SerializeField] private bool isConverter = false; // 변환기 모드 여부
-    [SerializeField] private string outputResourceName = "Steel"; // 변환 결과물 이름
-    [SerializeField] private GameObject outputArea; // 자원이 쌓일 자식 오브젝트
-    [SerializeField] private TMP_Text outputAmountText; // 변환된 수량 표시 TMP
+    [SerializeField] private bool isConverter = false; 
+    [SerializeField] private string outputResourceName = "Steel"; 
+    [SerializeField] private GameObject outputArea; 
+    [SerializeField] private TMP_Text outputAmountText; 
 
     [Header("Speed Settings")]
     [SerializeField] private float playerToPlatformInterval = 0.05f; 
@@ -24,17 +24,17 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
     [Header("UI Settings")]
     [SerializeField] private TMP_Text heldAmountText;      
     [SerializeField] private TMP_Text remainingAmountText; 
-    [SerializeField] private Image resourceIconImage;       // 입력 자원 아이콘
-    [SerializeField] private Image outputResourceIconImage; // 출력 자원 아이콘
+    [SerializeField] private Image resourceIconImage;       
+    [SerializeField] private Image outputResourceIconImage; 
 
     [Header("Visual Stacking")]
-    [SerializeField] private ResourceStack heldStack;   // 플랫폼에 쌓이는 자원 시각화
-    [SerializeField] private ResourceStack outputStack; // 변환된 자원 시각화
+    [SerializeField] private ResourceStack heldStack;   
+    [SerializeField] private ResourceStack outputStack; 
 
     [Header("Current Progress")]
     [SerializeField] private int currentAmount = 0; 
     [SerializeField] private int heldAmount = 0;    
-    [SerializeField] private int convertedAmount = 0; // 변환 완료되어 쌓인 양
+    [SerializeField] private int convertedAmount = 0; 
 
     [Header("Events")]
     public UnityEvent OnTargetReached;
@@ -46,11 +46,7 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
 
     private void Awake()
     {
-        // 변환기 모드가 아니면 출력 구역 비활성화
-        if (outputArea != null)
-        {
-            outputArea.SetActive(isConverter);
-        }
+        if (outputArea != null) outputArea.SetActive(isConverter);
     }
 
     private void Start()
@@ -61,13 +57,9 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
 
     private void Update()
     {
-        // 플레이어가 자원을 옮길 수 있는 상태인지 체크
         bool isTransferring = _isPlayerOnPlatform && PlayerStats.Instance != null && PlayerStats.Instance.GetResourceCount(resourceName) > 0;
-        
-        // 반복 불가 미션인데 이미 목표치만큼 가져왔다면 전송 중이 아닌 것으로 간주 (변환기는 제외)
         if (!isConverter && !isRepeatable && (currentAmount + heldAmount) >= targetAmount) isTransferring = false;
 
-        // "자원이 이동 중일 때"가 아닐 때만 최종 제출/변환 진행
         if (!_isCompleted && heldAmount > 0 && !isTransferring)
         {
             _processTimer += Time.deltaTime;
@@ -89,7 +81,6 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
     public void OnPlayerStay(GameObject player)
     {
         if (_isCompleted && !isRepeatable) return;
-
         _transferTimer += Time.deltaTime;
         if (_transferTimer >= playerToPlatformInterval)
         {
@@ -98,15 +89,11 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         }
     }
 
-    public void OnPlayerExit(GameObject player) 
-    {
-        _isPlayerOnPlatform = false;
-    }
+    public void OnPlayerExit(GameObject player) => _isPlayerOnPlatform = false;
 
     private void TryTransferFromPlayer()
     {
         if (PlayerStats.Instance == null) return;
-
         int maxCanTake = targetAmount - (currentAmount + heldAmount);
         if (!isConverter && !isRepeatable && maxCanTake <= 0) return;
 
@@ -118,12 +105,7 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
 
             PlayerStats.Instance.SpendResource(resourceName, amountToTake);
             heldAmount += amountToTake;
-
-            if (heldStack != null)
-            {
-                for (int i = 0; i < amountToTake; i++) heldStack.Add(resourceName);
-            }
-            
+            if (heldStack != null) for (int i = 0; i < amountToTake; i++) heldStack.Add(resourceName);
             UpdateProgressTexts();
         }
     }
@@ -133,7 +115,7 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         if (heldAmount > 0)
         {
             heldAmount--;
-            if (heldStack != null) heldStack.Remove(resourceName); // Update: pass name
+            if (heldStack != null) heldStack.Remove(resourceName);
             
             if (isConverter)
             {
@@ -142,131 +124,96 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
             }
             else
             {
-                currentAmount++; // 일반 제출기로 작동
-                if (currentAmount >= targetAmount)
-                {
-                    CompleteSubmission();
-                }
+                currentAmount++;
+                if (currentAmount >= targetAmount) CompleteSubmission();
             }
-            
             UpdateProgressTexts();
         }
     }
 
     private void CompleteSubmission()
     {
-        Debug.Log($"[Submission] {gameObject.name} Target Reached!");
         OnTargetReached?.Invoke();
-
-        if (isRepeatable)
-        {
-            currentAmount -= targetAmount;
-            if (currentAmount < 0) currentAmount = 0;
-        }
-        else
-        {
-            _isCompleted = true;
-            heldAmount = 0;
-            if (heldStack != null) heldStack.Clear();
-            currentAmount = targetAmount;
-        }
-        
+        if (isRepeatable) currentAmount -= targetAmount;
+        else { _isCompleted = true; heldAmount = 0; if (heldStack != null) heldStack.Clear(); currentAmount = targetAmount; }
         UpdateProgressTexts();
     }
 
     private void UpdateResourceIcons()
     {
         if (ResourceDatabase.Instance == null) return;
-
-        if (resourceIconImage != null)
-            resourceIconImage.sprite = ResourceDatabase.Instance.GetSprite(resourceName);
-        
-        if (outputResourceIconImage != null && isConverter)
-            outputResourceIconImage.sprite = ResourceDatabase.Instance.GetSprite(outputResourceName);
+        if (resourceIconImage != null) resourceIconImage.sprite = ResourceDatabase.Instance.GetSprite(resourceName);
+        if (outputResourceIconImage != null && isConverter) outputResourceIconImage.sprite = ResourceDatabase.Instance.GetSprite(outputResourceName);
     }
 
     public void UpdateProgressTexts()
     {
-        if (heldAmountText != null)
-        {
-            heldAmountText.text = heldAmount > 0 ? $"+{heldAmount}" : "";
-        }
-
+        if (heldAmountText != null) heldAmountText.text = heldAmount > 0 ? $"+{heldAmount}" : "";
         if (remainingAmountText != null)
         {
-            if (isConverter)
-            {
-                remainingAmountText.text = "CONVERTING";
-            }
-            else
-            {
-                int remaining = targetAmount - currentAmount;
-                if (remaining < 0) remaining = 0;
-
-                if (_isCompleted && !isRepeatable)
-                    remainingAmountText.text = "OK";
-                else
-                    remainingAmountText.text = $"{remaining}";
-            }
+            if (isConverter) remainingAmountText.text = "CONVERTING";
+            else remainingAmountText.text = (_isCompleted && !isRepeatable) ? "OK" : $"{Mathf.Max(0, targetAmount - currentAmount)}";
         }
-
-        if (outputAmountText != null)
-        {
-            outputAmountText.text = convertedAmount > 0 ? $"{convertedAmount}" : "EMPTY";
-        }
+        if (outputAmountText != null) outputAmountText.text = convertedAmount > 0 ? $"{convertedAmount}" : "EMPTY";
     }
 
     public void CollectConvertedResources()
     {
-        Debug.Log($"[SubmissionPlatform] CollectConvertedResources called. Amount: {convertedAmount}");
-        if (convertedAmount > 0 && PlayerStats.Instance != null)
+        if (convertedAmount <= 0 || PlayerStats.Instance == null) return;
+
+        int current = PlayerStats.Instance.GetResourceCount(outputResourceName);
+        int limit = PlayerStats.Instance.GetResourceLimit(outputResourceName);
+        
+        if (current >= limit)
         {
-            PlayerStats.Instance.AddResource(outputResourceName, convertedAmount);
-            convertedAmount = 0;
-            if (outputStack != null) outputStack.Clear();
-            UpdateProgressTexts();
-            Debug.Log($"[SubmissionPlatform] Bulk collected {outputResourceName}.");
+            PlayerStats.Instance.ShowMaxCapacityFeedback();
+            return;
         }
-        else if (PlayerStats.Instance == null)
-        {
-            Debug.LogError("[SubmissionPlatform] PlayerStats.Instance is NULL during bulk collection!");
-        }
+
+        int canTake = Mathf.Min(convertedAmount, limit - current);
+        PlayerStats.Instance.AddResource(outputResourceName, canTake);
+        convertedAmount -= canTake;
+        if (outputStack != null) for (int i = 0; i < canTake; i++) outputStack.Remove(outputResourceName);
+        UpdateProgressTexts();
     }
 
     public void TryCollectOneResource()
     {
-        Debug.Log($"[SubmissionPlatform] TryCollectOneResource called. Current convertedAmount: {convertedAmount}");
+        if (convertedAmount <= 0 || PlayerStats.Instance == null) return;
 
-        if (convertedAmount > 0)
+        int current = PlayerStats.Instance.GetResourceCount(outputResourceName);
+        int limit = PlayerStats.Instance.GetResourceLimit(outputResourceName);
+
+        if (current >= limit)
         {
-            if (PlayerStats.Instance != null)
-            {
-                PlayerStats.Instance.AddResource(outputResourceName, 1);
-                convertedAmount--;
-                if (outputStack != null) outputStack.Remove(outputResourceName); // Update: pass name
-                UpdateProgressTexts();
-                Debug.Log($"[SubmissionPlatform] Successfully collected 1 {outputResourceName}. Remaining in buffer: {convertedAmount}");
-            }
-            else
-            {
-                Debug.LogError("[SubmissionPlatform] PlayerStats.Instance is NULL during incremental collection!");
-            }
+            PlayerStats.Instance.ShowMaxCapacityFeedback();
+            return;
         }
-        else
-        {
-            Debug.LogWarning("[SubmissionPlatform] No resources to collect (convertedAmount is 0).");
-        }
+
+        PlayerStats.Instance.AddResource(outputResourceName, 1);
+        convertedAmount--;
+        if (outputStack != null) outputStack.Remove(outputResourceName);
+        UpdateProgressTexts();
     }
-
 
     public void ResetProgress()
     {
-        currentAmount = 0;
-        heldAmount = 0;
-        convertedAmount = 0;
-        _isCompleted = false;
+        currentAmount = 0; heldAmount = 0; convertedAmount = 0; _isCompleted = false;
         if (heldStack != null) heldStack.Clear();
         if (outputStack != null) outputStack.Clear();
+        UpdateProgressTexts();
+    }
+
+    // Miner 전용: 플레이어를 거치지 않고 바로 플랫폼 저장소로 추가
+    public void AddHeldAmountDirectly(string rName, int amount)
+    {
+        if (rName != resourceName) return; // 변환기/제출기 자원과 다르면 무시
+
+        heldAmount += amount;
+        if (heldStack != null)
+        {
+            for (int i = 0; i < amount; i++) heldStack.Add(rName);
+        }
         UpdateProgressTexts();
     }
 }

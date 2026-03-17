@@ -16,11 +16,11 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
     [SerializeField] private ResourceStack visualStack;
 
     [Header("Animations")]
-    [SerializeField] private Animator animator; // 자원 애니메이터
+    [SerializeField] private Animator animator; 
 
     private float _currentHealth;
     private bool _isHarvested = false;
-    private bool _isHarvestingCleanup = false; // [추가] 정리 중인지 여부
+    private bool _isHarvestingCleanup = false; 
     private bool _isFirstHit = true; 
     private float _timer;
     private Coroutine _respawnCoroutine;
@@ -30,7 +30,6 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
     {
         _currentHealth = maxHealth;
         _renderers = GetComponentsInChildren<MeshRenderer>();
-
         if (animator == null) animator = GetComponentInChildren<Animator>();
     }
 
@@ -60,92 +59,91 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
     public void OnPlayerStay(GameObject player)
     {
         if (_isHarvested || _isHarvestingCleanup || PlayerStats.Instance == null) return;
-
-        // 플레이어에게 채집 권한 요청 (장비 없을 땐 하나만, 있을 땐 모두)
         if (!PlayerStats.Instance.RequestHarvestPermission(this)) return;
 
         if (_isFirstHit)
         {
-            DealDamage();
+            DealDamage(true); // 플레이어가 주는 대미지
             _isFirstHit = false;
             _timer = 0;
             return;
         }
 
         _timer += Time.deltaTime;
-        float currentInterval = PlayerStats.Instance.attackSpeed;
-
-        if (_timer >= currentInterval)
+        if (_timer >= PlayerStats.Instance.attackSpeed)
         {
             _timer = 0;
-            DealDamage();
-        }
-    }
-
-    private void DealDamage()
-    {
-        if (_isHarvested || _isHarvestingCleanup) return;
-
-        float damage = (PlayerStats.Instance != null) ? PlayerStats.Instance.attackPower : 10f;
-        if (damage <= 0) damage = 10f;
-
-        _currentHealth -= damage;
-
-        // 자원 애니메이션 실행 (항상)
-        if (animator != null) animator.SetTrigger("Collect");
-
-        // 플레이어 공격 애니메이션 실행 (장비가 없을 때만)
-        if (PlayerStats.Instance != null && !PlayerStats.Instance.HasEquipment())
-        {
-            Animator playerAnim = PlayerStats.Instance.GetComponentInChildren<Animator>();
-            if (playerAnim != null) playerAnim.SetTrigger("Attack");
-        }
-
-        Debug.Log($"[Resource] {resourceName} Damaged. HP: {_currentHealth}");
-
-        if (_currentHealth <= 0)
-        {
-            CompleteHarvest();
+            DealDamage(true);
         }
     }
 
     public void OnPlayerExit(GameObject player)
     {
-        // 채집이 완료되어 정리 중이라면 코루틴이 끝날 때까지 권한을 유지함
         if (!_isHarvestingCleanup && PlayerStats.Instance != null)
-        {
             PlayerStats.Instance.ReleaseHarvestPermission(this);
-        }
         _timer = 0;
     }
 
-    private void CompleteHarvest()
+    // Miner 등이 외부에서 호출할 수 있는 대미지 메서드
+    public int TakeExternalDamage(float damage)
+    {
+        if (_isHarvested || _isHarvestingCleanup) return 0;
+
+        _currentHealth -= damage;
+        if (animator != null) animator.SetTrigger("Collect");
+
+        if (_currentHealth <= 0)
+        {
+            int amount = harvestAmount;
+            CompleteHarvest(false); // 플레이어에게 직접 주지 않음
+            return amount;
+        }
+        return 0;
+    }
+
+    private void DealDamage(bool giveToPlayer)
+    {
+        if (_isHarvested || _isHarvestingCleanup) return;
+
+        float damage = (PlayerStats.Instance != null) ? PlayerStats.Instance.attackPower : 10f;
+        _currentHealth -= damage;
+
+        if (animator != null) animator.SetTrigger("Collect");
+
+        if (giveToPlayer && PlayerStats.Instance != null && !PlayerStats.Instance.HasEquipment())
+        {
+            Animator playerAnim = PlayerStats.Instance.GetComponentInChildren<Animator>();
+            if (playerAnim != null) playerAnim.SetTrigger("Attack");
+        }
+
+        if (_currentHealth <= 0)
+        {
+            CompleteHarvest(giveToPlayer);
+        }
+    }
+
+    private void CompleteHarvest(bool giveToPlayer)
     {
         _isHarvested = true;
         _isHarvestingCleanup = true;
         _currentHealth = 0;
+        GetComponent<Collider>().enabled = false;
+        if (giveToPlayer && PlayerStats.Instance != null)
+            PlayerStats.Instance.ReleaseHarvestPermission(this);
 
-        // 애니메이션 재생 후 정리를 위한 코루틴 시작
-        StartCoroutine(HarvestCleanupRoutine());
+        StartCoroutine(HarvestCleanupRoutine(giveToPlayer));
     }
 
-    private IEnumerator HarvestCleanupRoutine()
+    private IEnumerator HarvestCleanupRoutine(bool giveToPlayer)
     {
-        // 애니메이션이 눈에 보일 시간을 줍니다
         yield return new WaitForSeconds(0.2f);
-
         SetVisualsActive(false);
         if (visualStack != null) visualStack.Clear();
 
-        if (PlayerStats.Instance != null)
-        {
+        if (giveToPlayer && PlayerStats.Instance != null)
             PlayerStats.Instance.AddResource(resourceName, harvestAmount);
-            // 시각적 정리가 끝난 이 시점에 채집 권한을 해제
-            PlayerStats.Instance.ReleaseHarvestPermission(this);
-        }
 
         _isHarvestingCleanup = false;
-
         if (_respawnCoroutine != null) StopCoroutine(_respawnCoroutine);
         _respawnCoroutine = StartCoroutine(RespawnRoutine());
     }
@@ -153,22 +151,23 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
     private IEnumerator RespawnRoutine()
     {
         yield return new WaitForSeconds(respawnTime);
-
         _isHarvested = false;
         _currentHealth = maxHealth;
-
         SetVisualsActive(true);
         InitializeVisuals();
-
-        Debug.Log($"[Resource] {resourceName} has respawned!");
     }
 
     private void SetVisualsActive(bool isActive)
     {
         if (_renderers == null) return;
-        foreach (var renderer in _renderers)
-        {
-            renderer.enabled = isActive;
-        }
+        foreach (var r in _renderers) r.enabled = isActive;
+        GetComponent<Collider>().enabled = true;
+    }
+
+    public string GetResourceName() => resourceName;
+
+    public bool IsHarvested()
+    {
+        return _isHarvested || _isHarvestingCleanup;
     }
 }
