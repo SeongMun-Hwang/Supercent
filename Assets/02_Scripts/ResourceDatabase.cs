@@ -11,6 +11,7 @@ public class ResourceDatabase : MonoBehaviour
     {
         public string name;
         public GameObject prefab;
+        public Sprite icon;  // 자원 아이콘
         public int maxCount; // 자원 최대 보유 개수
     }
 
@@ -25,7 +26,7 @@ public class ResourceDatabase : MonoBehaviour
 
         foreach (var data in resourceList)
         {
-            if (data.prefab != null)
+            if (!string.IsNullOrEmpty(data.name))
                 _database[data.name] = data;
         }
     }
@@ -38,14 +39,22 @@ public class ResourceDatabase : MonoBehaviour
         return null;
     }
 
+    public Sprite GetSprite(string resourceName)
+    {
+        if (_database.TryGetValue(resourceName, out ResourceData data))
+            return data.icon;
+
+        return null;
+    }
+
     public int GetMaxCount(string resourceName)
     {
         if (_database.TryGetValue(resourceName, out ResourceData data))
         {
-            if (data.maxCount <= 0) return 10; // 기본값
+            if (data.maxCount <= 0) return 50; // 기본값
             return data.maxCount;
         }
 
-        return 10;
+        return 50;
     }
 }

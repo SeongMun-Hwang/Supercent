@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.Events;
 using TMPro;
 
@@ -23,6 +24,8 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
     [Header("UI Settings")]
     [SerializeField] private TMP_Text heldAmountText;      
     [SerializeField] private TMP_Text remainingAmountText; 
+    [SerializeField] private Image resourceIconImage;       // 입력 자원 아이콘
+    [SerializeField] private Image outputResourceIconImage; // 출력 자원 아이콘
 
     [Header("Visual Stacking")]
     [SerializeField] private ResourceStack heldStack;   // 플랫폼에 쌓이는 자원 시각화
@@ -52,6 +55,7 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
 
     private void Start()
     {
+        UpdateResourceIcons();
         UpdateProgressTexts();
     }
 
@@ -168,6 +172,17 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         }
         
         UpdateProgressTexts();
+    }
+
+    private void UpdateResourceIcons()
+    {
+        if (ResourceDatabase.Instance == null) return;
+
+        if (resourceIconImage != null)
+            resourceIconImage.sprite = ResourceDatabase.Instance.GetSprite(resourceName);
+        
+        if (outputResourceIconImage != null && isConverter)
+            outputResourceIconImage.sprite = ResourceDatabase.Instance.GetSprite(outputResourceName);
     }
 
     public void UpdateProgressTexts()

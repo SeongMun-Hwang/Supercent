@@ -27,6 +27,7 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
     [Header("UI Settings")]
     [SerializeField] private TMP_Text remainingAmountText; 
     [SerializeField] private Image progressFillImage; // 게이지용 이미지
+    [SerializeField] private Image resourceIconImage; // 추가: 요구 자원 아이콘
 
     [Header("Current Progress")]
     [SerializeField] private int currentStepAmount = 0; 
@@ -39,6 +40,7 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
 
     private void Start()
     {
+        UpdateResourceIcon();
         UpdateUI();
     }
 
@@ -83,18 +85,12 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
 
         if (currentStepAmount >= currentStep.targetAmount)
         {
-            ApplyUpgrade(currentStep);
-            currentStepIndex++;
-            currentStepAmount = 0;
-            
-            if (currentStepIndex >= upgradeSteps.Count)
-            {
-                _isCompleted = true;
-                gameObject.SetActive(false);
-                return;
-            }
+            CompleteStep(currentStep);
         }
-        UpdateUI();
+        else
+        {
+            UpdateUI();
+        }
     }
 
     public void OnPlayerEnter(GameObject player)
@@ -136,7 +132,6 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
             PlayerStats.Instance.SpendResource(currentStep.resourceName, amountToTake);
             heldAmount += amountToTake;
             
-            // 전송 즉시 UI 갱신하여 숫자가 줄어드는 것을 보여줌
             UpdateUI();
         }
     }
@@ -149,24 +144,34 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
         currentStepAmount++;
         
         UpgradeStep currentStep = upgradeSteps[currentStepIndex];
-        // Note: EquipmentUpgradePlatform had heldStack removed in previous step, 
-        // but if it were there, it would use currentStep.resourceName
         
         if (currentStepAmount >= currentStep.targetAmount)
         {
-            ApplyUpgrade(currentStep);
-            currentStepIndex++;
-            currentStepAmount = 0;
-            
-            if (currentStepIndex >= upgradeSteps.Count)
-            {
-                _isCompleted = true;
-                gameObject.SetActive(false); // 모든 업그레이드 완료 시 플랫폼 제거
-                return;
-            }
+            CompleteStep(currentStep);
         }
+        else
+        {
+            UpdateUI();
+        }
+    }
+
+    private void CompleteStep(UpgradeStep step)
+    {
+        ApplyUpgrade(step);
+
+        currentStepIndex++;
+        currentStepAmount = 0;
         
-        UpdateUI();
+        if (currentStepIndex >= upgradeSteps.Count)
+        {
+            _isCompleted = true;
+            gameObject.SetActive(false);
+        }
+        else
+        {
+            UpdateResourceIcon(); // 다음 단계 아이콘으로 갱신
+            UpdateUI();
+        }
     }
 
     private void ApplyUpgrade(UpgradeStep step)
@@ -176,22 +181,17 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
         Transform root = PlayerStats.Instance.equipmentRoot;
         if (root != null)
         {
-            // 기존 장비 제거
             foreach (Transform child in root) Destroy(child.gameObject);
 
-            // 새 장비 생성
             if (step.equipmentPrefab != null)
             {
                 GameObject eq = Instantiate(step.equipmentPrefab, root);
                 eq.transform.localPosition = Vector3.zero;
                 eq.transform.localRotation = Quaternion.identity;
-                
-                // 장비의 모든 자식 콜라이더 태그를 "Player"로 설정 (범위 확장 효과)
                 SetTagRecursive(eq, "Player");
             }
         }
 
-        // 공격력 갱신
         PlayerStats.Instance.attackPower = step.attackPower;
         Debug.Log($"[Upgrade] Applied Step. New Power: {step.attackPower}");
     }
@@ -200,6 +200,19 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
     {
         obj.tag = tag;
         foreach (Transform child in obj.transform) SetTagRecursive(child.gameObject, tag);
+    }
+
+    private void UpdateResourceIcon()
+    {
+        if (currentStepIndex < upgradeSteps.Count && resourceIconImage != null && ResourceDatabase.Instance != null)
+        {
+            string rName = upgradeSteps[currentStepIndex].resourceName;
+            Sprite icon = ResourceDatabase.Instance.GetSprite(rName);
+            if (icon != null)
+            {
+                resourceIconImage.sprite = icon;
+            }
+        }
     }
 
     private void UpdateUI()
@@ -211,17 +224,14 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
         }
 
         UpgradeStep step = upgradeSteps[currentStepIndex];
-
         int totalProgress = currentStepAmount + heldAmount;
 
-        // 텍스트 업데이트
         if (remainingAmountText != null)
         {
             int remaining = step.targetAmount - totalProgress;
             remainingAmountText.text = $"{Mathf.Max(0, remaining)}";
         }
 
-        // 게이지 업데이트
         if (progressFillImage != null)
         {
             float fillRatio = (float)totalProgress / step.targetAmount;
