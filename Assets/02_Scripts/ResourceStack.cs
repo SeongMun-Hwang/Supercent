@@ -97,4 +97,12 @@ public class ResourceStack : MonoBehaviour
         }
         _groups.Clear();
     }
+
+    // [추가] 전체 자원 개수 반환
+    public int GetTotalCount()
+    {
+        int total = 0;
+        foreach (var group in _groups) total += group.visuals.Count;
+        return total;
+    }
 }
