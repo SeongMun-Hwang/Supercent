@@ -12,10 +12,13 @@ public class PlayerMovement : MonoBehaviour
 
     private CharacterController _characterController;
     private Transform _cameraTransform;
+    private Animator _animator;
 
     private void Awake()
     {
         _characterController = GetComponent<CharacterController>();
+        _animator = GetComponentInChildren<Animator>(); // 참조 추가
+
         if (Camera.main != null)
         {
             _cameraTransform = Camera.main.transform;
@@ -37,8 +40,15 @@ public class PlayerMovement : MonoBehaviour
         right.Normalize();
 
         Vector3 moveDirection = (forward * input.y) + (right * input.x);
+        float moveMagnitude = moveDirection.magnitude;
 
-        if (moveDirection.magnitude > 0.1f)
+        // 애니메이터에 이동 값 전달 (0 ~ 1)
+        if (_animator != null)
+        {
+            _animator.SetFloat("moveSpeed", moveMagnitude);
+        }
+
+        if (moveMagnitude > 0.1f)
         {
             // Move
             _characterController.Move(moveDirection * moveSpeed * Time.deltaTime);

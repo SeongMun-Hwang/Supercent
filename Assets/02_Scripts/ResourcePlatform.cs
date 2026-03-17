@@ -53,9 +53,6 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
     {
         if (_isHarvested) return;
         _timer = 0;
-
-        if (animator != null)
-            //animator.SetTrigger("Collect");
         Debug.Log($"[Resource] Started harvesting {resourceName}...");
     }
 
@@ -71,24 +68,40 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
         if (_timer >= currentInterval)
         {
             _timer = 0;
+            DealDamage();
+        }
+    }
 
-            float damage = (PlayerStats.Instance != null) ? PlayerStats.Instance.attackPower : 10f;
-            if (damage <= 0) damage = 10f;
+    private void DealDamage()
+    {
+        if (_isHarvested) return;
 
-            _currentHealth -= damage;
+        float damage = (PlayerStats.Instance != null) ? PlayerStats.Instance.attackPower : 10f;
+        if (damage <= 0) damage = 10f;
 
-            // 대미지 입을 때 애니메이션 실행
-            if (animator != null)
+        _currentHealth -= damage;
+
+        // 자원 애니메이션 실행
+        if (animator != null)
+        {
+            animator.SetTrigger("Collect");
+        }
+
+        // 플레이어 공격 애니메이션 실행
+        if (PlayerStats.Instance != null)
+        {
+            Animator playerAnim = PlayerStats.Instance.GetComponentInChildren<Animator>();
+            if (playerAnim != null)
             {
-                animator.SetTrigger("Collect");
+                playerAnim.SetTrigger("Attack");
             }
+        }
 
-            Debug.Log($"[Resource] {resourceName} Health: {_currentHealth}");
+        Debug.Log($"[Resource] {resourceName} Damaged. Current Health: {_currentHealth}");
 
-            if (_currentHealth <= 0)
-            {
-                CompleteHarvest();
-            }
+        if (_currentHealth <= 0)
+        {
+            CompleteHarvest();
         }
     }
 
