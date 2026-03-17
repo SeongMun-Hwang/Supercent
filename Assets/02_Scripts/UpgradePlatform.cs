@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class UpgradePlatform : MonoBehaviour, IPlatformAction
 {
-    public enum UpgradeType { AttackPower }
+    public enum UpgradeType { AttackPower, MaxCapacity }
 
     [Header("Upgrade Settings")]
     [SerializeField] private UpgradeType upgradeType;
@@ -52,12 +52,16 @@ public class UpgradePlatform : MonoBehaviour, IPlatformAction
             {
                 PlayerStats.Instance.UpgradeAttackPower(upgradeValue);
             }
+            else if (upgradeType == UpgradeType.MaxCapacity)
+            {
+                PlayerStats.Instance.UpgradeMaxCapacity(Mathf.RoundToInt(upgradeValue));
+            }
 
             // Increase cost for next level
             _currentLevel++;
             _currentCost = Mathf.RoundToInt(_currentCost * costMultiplier);
 
-            Debug.Log($"Upgraded to Level {_currentLevel}! Next cost: {_currentCost}");
+            Debug.Log($"Upgraded {upgradeType} to Level {_currentLevel}! Next cost: {_currentCost}");
         }
         else
         {

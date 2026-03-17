@@ -13,6 +13,9 @@ public class PlayerStats : MonoBehaviour
     [Header("Equipment")]
     public Transform equipmentRoot; // 장비가 부착될 위치
 
+    [Header("Visuals")]
+    [SerializeField] private ResourceStack visualStack; // 시각적 스택
+
     private ResourcePlatform _currentHarvestTarget; // 현재 채집 중인 단일 타겟
 
     public bool HasEquipment()
@@ -48,7 +51,8 @@ public class PlayerStats : MonoBehaviour
         }
     }
 
-    [Header("Inventory")]
+    [Header("Inventory Settings")]
+    [SerializeField] private int extraCapacity = 0; // 업그레이드로 추가된 용량
     private Dictionary<string, int> _inventory = new Dictionary<string, int>();
 
     private void Awake()
@@ -57,18 +61,27 @@ public class PlayerStats : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    [Header("Visuals")]
-    [SerializeField] private ResourceStack visualStack;
+    public int GetResourceLimit(string resourceName)
+    {
+        int baseLimit = 10;
+        if (ResourceDatabase.Instance != null)
+            baseLimit = ResourceDatabase.Instance.GetMaxCount(resourceName);
+
+        return baseLimit + extraCapacity;
+    }
+
+    public void UpgradeMaxCapacity(int amount)
+    {
+        extraCapacity += amount;
+        Debug.Log($"[PlayerStats] Max Capacity Upgraded! New Extra: {extraCapacity}");
+    }
 
     public void AddResource(string resourceName, int amount)
     {
         int current = GetResourceCount(resourceName);
+        int limit = GetResourceLimit(resourceName);
 
-        int max = 10;
-        if (ResourceDatabase.Instance != null)
-            max = ResourceDatabase.Instance.GetMaxCount(resourceName);
-
-        int canAdd = Mathf.Clamp(amount, 0, max - current);
+        int canAdd = Mathf.Clamp(amount, 0, limit - current);
 
         if (canAdd <= 0) return;
 
@@ -85,7 +98,7 @@ public class PlayerStats : MonoBehaviour
             }
         }
 
-        Debug.Log($"Inventory: {resourceName} = {_inventory[resourceName]} / {max}");
+        Debug.Log($"[PlayerStats] {resourceName} = {_inventory[resourceName]} / {limit}");
     }
 
     public int GetResourceCount(string resourceName)
@@ -115,6 +128,14 @@ public class PlayerStats : MonoBehaviour
     public void UpgradeAttackPower(float amount)
     {
         attackPower += amount;
-        Debug.Log($"Attack Power Upgraded: {attackPower}");
+        Debug.Log($"[PlayerStats] Attack Power Upgraded: {attackPower}");
+    }
+
+    public void UpgradeAttackSpeed(float amount)
+    {
+        // 공격 간격을 조정 (음수 값을 더하면 빨라짐)
+        attackSpeed += amount;
+        attackSpeed = Mathf.Max(0.1f, attackSpeed); // 최소 공격 간격 제한
+        Debug.Log($"[PlayerStats] Attack Speed Upgraded: {attackSpeed}");
     }
 }

@@ -51,10 +51,10 @@ public class ResourceDatabase : MonoBehaviour
     {
         if (_database.TryGetValue(resourceName, out ResourceData data))
         {
-            if (data.maxCount <= 0) return 50; // 기본값
+            if (data.maxCount <= 0) return 10; // 기본값 10으로 변경
             return data.maxCount;
         }
 
-        return 50;
+        return 10; // 자원이 DB에 없을 때도 기본값 10 반환
     }
 }

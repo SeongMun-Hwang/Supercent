@@ -6,7 +6,11 @@ public class ResourceStack : MonoBehaviour
 {
     public enum StackMode { Upward, BehindPlayer }
     [SerializeField] private StackMode mode = StackMode.Upward;
-    [SerializeField] private float spacing = 0.5f; 
+    
+    [Header("Spacing Settings")]
+    [SerializeField] private float verticalSpacing = 0.5f; // 위아래 간격 (Y축)
+    [SerializeField] private float rowSpacing = 0.5f;      // 앞뒤 줄 간격 (Z축)
+    
     [SerializeField] private Transform root;
 
     private class ResourceGroup
@@ -66,22 +70,20 @@ public class ResourceStack : MonoBehaviour
 
                 if (mode == StackMode.BehindPlayer)
                 {
-                    // groupIdx: 플레이어 뒤로 몇 번째 줄인지
-                    // i: 위로 몇 번째인지
-                    float yOffset = i * spacing;
-                    float zOffset = -(groupIdx + 1) * spacing;
+                    // groupIdx: 플레이어 뒤로 몇 번째 줄인지 (rowSpacing 사용)
+                    // i: 위로 몇 번째인지 (verticalSpacing 사용)
+                    float yOffset = i * verticalSpacing;
+                    float zOffset = -(groupIdx + 1) * rowSpacing;
                     
                     group.visuals[i].transform.localPosition = new Vector3(0, yOffset, zOffset);
-                    //group.visuals[i].transform.localRotation = Quaternion.identity;
                 }
                 else
                 {
-                    // Upward 모드일 경우 모든 자원을 하나의 수직 기둥으로 합쳐서 표시
+                    // Upward 모드일 경우 모든 자원을 하나의 수직 기둥으로 합쳐서 표시 (verticalSpacing 사용)
                     int totalBefore = 0;
                     for (int j = 0; j < groupIdx; j++) totalBefore += _groups[j].visuals.Count;
                     
-                    group.visuals[i].transform.localPosition = new Vector3(0, (totalBefore + i) * spacing, 0);
-                    //group.visuals[i].transform.localRotation = Quaternion.identity;
+                    group.visuals[i].transform.localPosition = new Vector3(0, (totalBefore + i) * verticalSpacing, 0);
                 }
             }
         }

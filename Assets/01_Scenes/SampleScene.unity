@@ -763,7 +763,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mode: 1
-  spacing: 0.25
+  verticalSpacing: 0.25
+  rowSpacing: 0.5
   root: {fileID: 1021970500}
 --- !u!114 &467820781
 MonoBehaviour:
@@ -781,6 +782,7 @@ MonoBehaviour:
   attackSpeed: 1
   equipmentRoot: {fileID: 374172478}
   visualStack: {fileID: 467820780}
+  extraCapacity: 0
 --- !u!114 &467820782
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1802,7 +1804,7 @@ Transform:
   m_GameObject: {fileID: 1021970499}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.5, z: -0.5}
+  m_LocalPosition: {x: 0, y: 0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2141,6 +2143,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3818566404189647639, guid: c42fd202c20204d4cadb4902d10005da, type: 3}
+      propertyPath: verticalSpacing
+      value: 0.25
+      objectReference: {fileID: 0}
     - target: {fileID: 4434621154892076821, guid: c42fd202c20204d4cadb4902d10005da, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.638
@@ -2172,6 +2178,10 @@ PrefabInstance:
     - target: {fileID: 6228433675070132582, guid: c42fd202c20204d4cadb4902d10005da, type: 3}
       propertyPath: m_LocalPosition.z
       value: 3.1320002
+      objectReference: {fileID: 0}
+    - target: {fileID: 6348130333568221829, guid: c42fd202c20204d4cadb4902d10005da, type: 3}
+      propertyPath: verticalSpacing
+      value: 0.25
       objectReference: {fileID: 0}
     - target: {fileID: 7911355583475085125, guid: c42fd202c20204d4cadb4902d10005da, type: 3}
       propertyPath: resourceName
@@ -3706,9 +3716,17 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3818566404189647639, guid: c42fd202c20204d4cadb4902d10005da, type: 3}
+      propertyPath: verticalSpacing
+      value: 0.25
+      objectReference: {fileID: 0}
     - target: {fileID: 5264584488536874178, guid: c42fd202c20204d4cadb4902d10005da, type: 3}
       propertyPath: m_Name
       value: SubmissionPlatform
+      objectReference: {fileID: 0}
+    - target: {fileID: 6348130333568221829, guid: c42fd202c20204d4cadb4902d10005da, type: 3}
+      propertyPath: verticalSpacing
+      value: 0.25
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3733,6 +3751,46 @@ PrefabInstance:
       propertyPath: m_Name
       value: UpgradePlatform
       objectReference: {fileID: 0}
+    - target: {fileID: 1292321918094076656, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.068
+      objectReference: {fileID: 0}
+    - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
+      propertyPath: upgradeSteps.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
+      propertyPath: upgradeSteps.Array.data[3].attackPower
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
+      propertyPath: upgradeSteps.Array.data[1].targetAmount
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
+      propertyPath: upgradeSteps.Array.data[2].targetAmount
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
+      propertyPath: upgradeSteps.Array.data[3].resourceName
+      value: Gold
+      objectReference: {fileID: 0}
+    - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
+      propertyPath: upgradeSteps.Array.data[3].targetAmount
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
+      propertyPath: upgradeSteps.Array.data[1].addMaxCapacity
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
+      propertyPath: upgradeSteps.Array.data[2].addMaxCapacity
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
+      propertyPath: upgradeSteps.Array.data[3].equipmentPrefab
+      value: 
+      objectReference: {fileID: 3023627955911239046, guid: 1faec507404e1de4ca21d21e48ce74b2, type: 3}
     - target: {fileID: 6204974759221392372, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
       propertyPath: m_LocalPosition.x
       value: -2

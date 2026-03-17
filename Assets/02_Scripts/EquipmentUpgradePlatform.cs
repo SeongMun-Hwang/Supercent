@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.UI; // 추가
+using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -11,8 +11,12 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
     {
         public string resourceName;      // 요구 자원
         public int targetAmount;         // 요구 수량
-        public GameObject equipmentPrefab; // 교체될 장비 프리팹
-        public float attackPower;        // 해당 단계의 공격력
+        public GameObject equipmentPrefab; // (선택) 교체될 장비 프리팹
+
+        [Header("Stat Upgrades (0 = Ignore)")]
+        public float addAttackPower;     // 추가 공격력
+        public int addMaxCapacity;       // 추가 인벤토리 용량
+        public float addAttackSpeed;     // 공격 간격 변경 (빨라지려면 음수 입력)
     }
 
     [Header("Upgrade Configuration")]
@@ -26,8 +30,8 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
 
     [Header("UI Settings")]
     [SerializeField] private TMP_Text remainingAmountText; 
-    [SerializeField] private Image progressFillImage; // 게이지용 이미지
-    [SerializeField] private Image resourceIconImage; // 추가: 요구 자원 아이콘
+    [SerializeField] private Image progressFillImage; 
+    [SerializeField] private Image resourceIconImage; 
 
     [Header("Current Progress")]
     [SerializeField] private int currentStepAmount = 0; 
@@ -57,7 +61,6 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
 
         if (!_isCompleted && heldAmount > 0)
         {
-            // 플레이어가 자원을 더 이상 전송할 수 없거나 플랫폼 밖에 있을 때 즉시 처리
             if (!canTransfer)
             {
                 InstantProcessToTarget();
@@ -131,7 +134,6 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
             int amountToTake = Mathf.Min(playerHas, transferBatchSize, maxCanTake);
             PlayerStats.Instance.SpendResource(currentStep.resourceName, amountToTake);
             heldAmount += amountToTake;
-            
             UpdateUI();
         }
     }
@@ -144,7 +146,6 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
         currentStepAmount++;
         
         UpgradeStep currentStep = upgradeSteps[currentStepIndex];
-        
         if (currentStepAmount >= currentStep.targetAmount)
         {
             CompleteStep(currentStep);
@@ -169,7 +170,7 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
         }
         else
         {
-            UpdateResourceIcon(); // 다음 단계 아이콘으로 갱신
+            UpdateResourceIcon();
             UpdateUI();
         }
     }
@@ -178,13 +179,14 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
     {
         if (PlayerStats.Instance == null) return;
 
-        Transform root = PlayerStats.Instance.equipmentRoot;
-        if (root != null)
+        // 1. 장비 교체
+        if (step.equipmentPrefab != null)
         {
-            foreach (Transform child in root) Destroy(child.gameObject);
-
-            if (step.equipmentPrefab != null)
+            Transform root = PlayerStats.Instance.equipmentRoot;
+            if (root != null)
             {
+                foreach (Transform child in root) Destroy(child.gameObject);
+
                 GameObject eq = Instantiate(step.equipmentPrefab, root);
                 eq.transform.localPosition = Vector3.zero;
                 eq.transform.localRotation = Quaternion.identity;
@@ -192,8 +194,17 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
             }
         }
 
-        PlayerStats.Instance.attackPower = step.attackPower;
-        Debug.Log($"[Upgrade] Applied Step. New Power: {step.attackPower}");
+        // 2. 능력치 강화 (0이 아닐 때만 적용)
+        if (step.addAttackPower != 0)
+            PlayerStats.Instance.UpgradeAttackPower(step.addAttackPower);
+        
+        if (step.addMaxCapacity != 0)
+            PlayerStats.Instance.UpgradeMaxCapacity(step.addMaxCapacity);
+            
+        if (step.addAttackSpeed != 0)
+            PlayerStats.Instance.UpgradeAttackSpeed(step.addAttackSpeed);
+
+        Debug.Log($"[Upgrade] Step Applied. Total Progress: {currentStepIndex + 1}/{upgradeSteps.Count}");
     }
 
     private void SetTagRecursive(GameObject obj, string tag)
@@ -208,10 +219,7 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
         {
             string rName = upgradeSteps[currentStepIndex].resourceName;
             Sprite icon = ResourceDatabase.Instance.GetSprite(rName);
-            if (icon != null)
-            {
-                resourceIconImage.sprite = icon;
-            }
+            if (icon != null) resourceIconImage.sprite = icon;
         }
     }
 
