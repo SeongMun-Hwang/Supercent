@@ -13,6 +13,41 @@ public class PlayerStats : MonoBehaviour
     [Header("Equipment")]
     public Transform equipmentRoot; // 장비가 부착될 위치
 
+    private ResourcePlatform _currentHarvestTarget; // 현재 채집 중인 단일 타겟
+
+    public bool HasEquipment()
+    {
+        return equipmentRoot != null && equipmentRoot.childCount > 0;
+    }
+
+    // 채집 가능 여부 확인 및 잠금
+    public bool RequestHarvestPermission(ResourcePlatform platform)
+    {
+        // 장비가 있으면 무조건 허용 (멀티 채집)
+        if (HasEquipment()) return true;
+
+        // 장비가 없으면:
+        // 1. 이미 채집 중인 타겟이 있는데 그게 내가 아니라면 거절
+        if (_currentHarvestTarget != null && _currentHarvestTarget != platform)
+        {
+            return false;
+        }
+
+        // 2. 채집 중인 타겟이 없거나 나라면 허용하고 잠금
+        _currentHarvestTarget = platform;
+        return true;
+    }
+
+    public void ReleaseHarvestPermission(ResourcePlatform platform)
+    {
+        // 명시적으로 해당 플랫폼이 잠금을 소유하고 있을 때만 해제
+        if (_currentHarvestTarget == platform)
+        {
+            _currentHarvestTarget = null;
+            Debug.Log($"[PlayerStats] Harvest target released: {platform.gameObject.name}");
+        }
+    }
+
     [Header("Inventory")]
     private Dictionary<string, int> _inventory = new Dictionary<string, int>();
 

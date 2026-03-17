@@ -20,6 +20,8 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
 
     private float _currentHealth;
     private bool _isHarvested = false;
+    private bool _isHarvestingCleanup = false; // [추가] 정리 중인지 여부
+    private bool _isFirstHit = true; 
     private float _timer;
     private Coroutine _respawnCoroutine;
     private MeshRenderer[] _renderers;
@@ -29,7 +31,6 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
         _currentHealth = maxHealth;
         _renderers = GetComponentsInChildren<MeshRenderer>();
 
-        // 애니메이터가 할당되지 않았다면 자식 오브젝트에서 찾기
         if (animator == null) animator = GetComponentInChildren<Animator>();
     }
 
@@ -51,19 +52,28 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
 
     public void OnPlayerEnter(GameObject player)
     {
-        if (_isHarvested) return;
+        if (_isHarvested || _isHarvestingCleanup) return;
+        _isFirstHit = true;
         _timer = 0;
-        Debug.Log($"[Resource] Started harvesting {resourceName}...");
     }
 
     public void OnPlayerStay(GameObject player)
     {
-        if (_isHarvested) return;
+        if (_isHarvested || _isHarvestingCleanup || PlayerStats.Instance == null) return;
+
+        // 플레이어에게 채집 권한 요청 (장비 없을 땐 하나만, 있을 땐 모두)
+        if (!PlayerStats.Instance.RequestHarvestPermission(this)) return;
+
+        if (_isFirstHit)
+        {
+            DealDamage();
+            _isFirstHit = false;
+            _timer = 0;
+            return;
+        }
 
         _timer += Time.deltaTime;
-
-        // 플레이어의 공격 속도(간격)를 가져옵니다. 없을 경우 기본값(harvestInterval) 사용.
-        float currentInterval = (PlayerStats.Instance != null) ? PlayerStats.Instance.attackSpeed : harvestInterval;
+        float currentInterval = PlayerStats.Instance.attackSpeed;
 
         if (_timer >= currentInterval)
         {
@@ -74,30 +84,24 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
 
     private void DealDamage()
     {
-        if (_isHarvested) return;
+        if (_isHarvested || _isHarvestingCleanup) return;
 
         float damage = (PlayerStats.Instance != null) ? PlayerStats.Instance.attackPower : 10f;
         if (damage <= 0) damage = 10f;
 
         _currentHealth -= damage;
 
-        // 자원 애니메이션 실행
-        if (animator != null)
-        {
-            animator.SetTrigger("Collect");
-        }
+        // 자원 애니메이션 실행 (항상)
+        if (animator != null) animator.SetTrigger("Collect");
 
-        // 플레이어 공격 애니메이션 실행
-        if (PlayerStats.Instance != null)
+        // 플레이어 공격 애니메이션 실행 (장비가 없을 때만)
+        if (PlayerStats.Instance != null && !PlayerStats.Instance.HasEquipment())
         {
             Animator playerAnim = PlayerStats.Instance.GetComponentInChildren<Animator>();
-            if (playerAnim != null)
-            {
-                playerAnim.SetTrigger("Attack");
-            }
+            if (playerAnim != null) playerAnim.SetTrigger("Attack");
         }
 
-        Debug.Log($"[Resource] {resourceName} Damaged. Current Health: {_currentHealth}");
+        Debug.Log($"[Resource] {resourceName} Damaged. HP: {_currentHealth}");
 
         if (_currentHealth <= 0)
         {
@@ -107,13 +111,28 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
 
     public void OnPlayerExit(GameObject player)
     {
+        // 채집이 완료되어 정리 중이라면 코루틴이 끝날 때까지 권한을 유지함
+        if (!_isHarvestingCleanup && PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.ReleaseHarvestPermission(this);
+        }
         _timer = 0;
     }
 
     private void CompleteHarvest()
     {
         _isHarvested = true;
+        _isHarvestingCleanup = true;
         _currentHealth = 0;
+
+        // 애니메이션 재생 후 정리를 위한 코루틴 시작
+        StartCoroutine(HarvestCleanupRoutine());
+    }
+
+    private IEnumerator HarvestCleanupRoutine()
+    {
+        // 애니메이션이 눈에 보일 시간을 줍니다
+        yield return new WaitForSeconds(0.2f);
 
         SetVisualsActive(false);
         if (visualStack != null) visualStack.Clear();
@@ -121,7 +140,11 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
         if (PlayerStats.Instance != null)
         {
             PlayerStats.Instance.AddResource(resourceName, harvestAmount);
+            // 시각적 정리가 끝난 이 시점에 채집 권한을 해제
+            PlayerStats.Instance.ReleaseHarvestPermission(this);
         }
+
+        _isHarvestingCleanup = false;
 
         if (_respawnCoroutine != null) StopCoroutine(_respawnCoroutine);
         _respawnCoroutine = StartCoroutine(RespawnRoutine());
