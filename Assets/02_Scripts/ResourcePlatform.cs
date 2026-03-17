@@ -7,7 +7,6 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
     [SerializeField] private string resourceName = "Iron";
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private int harvestAmount = 10;
-    [SerializeField] private float harvestInterval = 1.0f;
 
     [Header("Respawn Settings")]
     [SerializeField] private float respawnTime = 5f;
@@ -16,13 +15,12 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
     [SerializeField] private ResourceStack visualStack;
 
     [Header("Animations")]
-    [SerializeField] private Animator animator; 
+    [SerializeField] private Animator animator;
 
     private float _currentHealth;
-    private bool _isHarvested = false;
-    private bool _isHarvestingCleanup = false; 
-    private bool _isFirstHit = true; 
-    private float _timer;
+    private bool _isHarvested;
+    private bool _isHarvestingCleanup;
+
     private Coroutine _respawnCoroutine;
     private MeshRenderer[] _renderers;
 
@@ -30,12 +28,13 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
     {
         _currentHealth = maxHealth;
         _renderers = GetComponentsInChildren<MeshRenderer>();
-        if (animator == null) animator = GetComponentInChildren<Animator>();
+
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
     }
 
     private void Start()
     {
-        _currentHealth = maxHealth;
         InitializeVisuals();
     }
 
@@ -44,60 +43,62 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
         if (visualStack != null)
         {
             visualStack.Clear();
+
             int count = Mathf.Max(1, Mathf.RoundToInt(maxHealth / 20f));
-            for (int i = 0; i < count; i++) visualStack.Add(resourceName);
+
+            for (int i = 0; i < count; i++)
+                visualStack.Add(resourceName);
         }
     }
 
     public void OnPlayerEnter(GameObject player)
     {
         if (_isHarvested || _isHarvestingCleanup) return;
-        _isFirstHit = true;
-        _timer = 0;
+        if (PlayerStats.Instance == null) return;
+
+        // 장비가 있으면 접촉 즉시 채집
+        if (PlayerStats.Instance.HasEquipment())
+        {
+            DealDamage(true);
+        }
     }
 
     public void OnPlayerStay(GameObject player)
     {
-        if (_isHarvested || _isHarvestingCleanup || PlayerStats.Instance == null) return;
-        if (!PlayerStats.Instance.RequestHarvestPermission(this)) return;
+        if (_isHarvested || _isHarvestingCleanup) return;
+        if (PlayerStats.Instance == null) return;
 
-        if (_isFirstHit)
-        {
-            DealDamage(true); // 플레이어가 주는 대미지
-            _isFirstHit = false;
-            _timer = 0;
+        if (!PlayerStats.Instance.RequestHarvestPermission(this))
             return;
-        }
 
-        _timer += Time.deltaTime;
-        if (_timer >= PlayerStats.Instance.attackSpeed)
+        if (PlayerStats.Instance.CanHarvest())
         {
-            _timer = 0;
             DealDamage(true);
         }
     }
 
     public void OnPlayerExit(GameObject player)
     {
-        if (!_isHarvestingCleanup && PlayerStats.Instance != null)
+        if (PlayerStats.Instance != null)
             PlayerStats.Instance.ReleaseHarvestPermission(this);
-        _timer = 0;
     }
 
-    // Miner 등이 외부에서 호출할 수 있는 대미지 메서드
     public int TakeExternalDamage(float damage)
     {
         if (_isHarvested || _isHarvestingCleanup) return 0;
 
         _currentHealth -= damage;
-        if (animator != null) animator.SetTrigger("Collect");
+
+        if (animator != null)
+            animator.SetTrigger("Collect");
 
         if (_currentHealth <= 0)
         {
             int amount = harvestAmount;
-            CompleteHarvest(false); // 플레이어에게 직접 주지 않음
+            CompleteHarvest(false);
             return amount;
         }
+
         return 0;
     }
 
@@ -105,15 +106,19 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
     {
         if (_isHarvested || _isHarvestingCleanup) return;
 
-        float damage = (PlayerStats.Instance != null) ? PlayerStats.Instance.attackPower : 10f;
+        float damage = PlayerStats.Instance.attackPower;
+
         _currentHealth -= damage;
 
-        if (animator != null) animator.SetTrigger("Collect");
+        if (animator != null)
+            animator.SetTrigger("Collect");
 
-        if (giveToPlayer && PlayerStats.Instance != null && !PlayerStats.Instance.HasEquipment())
+        if (giveToPlayer && !PlayerStats.Instance.HasEquipment())
         {
             Animator playerAnim = PlayerStats.Instance.GetComponentInChildren<Animator>();
-            if (playerAnim != null) playerAnim.SetTrigger("Attack");
+
+            if (playerAnim != null)
+                playerAnim.SetTrigger("Attack");
         }
 
         if (_currentHealth <= 0)
@@ -126,9 +131,12 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
     {
         _isHarvested = true;
         _isHarvestingCleanup = true;
+
         _currentHealth = 0;
+
         GetComponent<Collider>().enabled = false;
-        if (giveToPlayer && PlayerStats.Instance != null)
+
+        if (giveToPlayer)
             PlayerStats.Instance.ReleaseHarvestPermission(this);
 
         StartCoroutine(HarvestCleanupRoutine(giveToPlayer));
@@ -137,22 +145,30 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
     private IEnumerator HarvestCleanupRoutine(bool giveToPlayer)
     {
         yield return new WaitForSeconds(0.2f);
-        SetVisualsActive(false);
-        if (visualStack != null) visualStack.Clear();
 
-        if (giveToPlayer && PlayerStats.Instance != null)
+        SetVisualsActive(false);
+
+        if (visualStack != null)
+            visualStack.Clear();
+
+        if (giveToPlayer)
             PlayerStats.Instance.AddResource(resourceName, harvestAmount);
 
         _isHarvestingCleanup = false;
-        if (_respawnCoroutine != null) StopCoroutine(_respawnCoroutine);
+
+        if (_respawnCoroutine != null)
+            StopCoroutine(_respawnCoroutine);
+
         _respawnCoroutine = StartCoroutine(RespawnRoutine());
     }
 
     private IEnumerator RespawnRoutine()
     {
         yield return new WaitForSeconds(respawnTime);
+
         _isHarvested = false;
         _currentHealth = maxHealth;
+
         SetVisualsActive(true);
         InitializeVisuals();
     }
@@ -160,7 +176,10 @@ public class ResourcePlatform : MonoBehaviour, IPlatformAction
     private void SetVisualsActive(bool isActive)
     {
         if (_renderers == null) return;
-        foreach (var r in _renderers) r.enabled = isActive;
+
+        foreach (var r in _renderers)
+            r.enabled = isActive;
+
         GetComponent<Collider>().enabled = true;
     }
 

@@ -997,7 +997,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   attackPower: 20
-  attackSpeed: 1
+  attackSpeed: 0.5
   equipmentRoot: {fileID: 374172478}
   visualStack: {fileID: 467820780}
   extraCapacity: 0
@@ -1016,7 +1016,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   joystick: {fileID: 1362111275}
-  moveSpeed: 10
+  moveSpeed: 5
   rotationSpeed: 10
 --- !u!54 &467820783
 Rigidbody:
