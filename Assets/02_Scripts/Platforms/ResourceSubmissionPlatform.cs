@@ -66,8 +66,8 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         
         if (!isConverter && !isRepeatable && (currentAmount + heldAmount) >= targetAmount) isPlayerTransferring = false;
 
-        // [수정] 이미 수령된 자원(heldAmount)은 플레이어의 위치 여부와 상관없이 항상 변환을 시도함
-        if (!_isCompleted && heldAmount > 0)
+        // [수정] 플레이어가 전송 중이 아닐 때만 이미 수령된 자원(heldAmount)의 변환 프로세스를 진행함
+        if (!_isCompleted && heldAmount > 0 && !isPlayerTransferring)
         {
             _processTimer += Time.deltaTime;
             if (_processTimer >= platformToTargetInterval)

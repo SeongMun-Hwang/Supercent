@@ -991,6 +991,7 @@ MonoBehaviour:
   jumpDuration: 0.4
   jumpHeight: 1.5
   root: {fileID: 1021970500}
+  resourceSubmissionPlatform: {fileID: 0}
 --- !u!114 &467820781
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1004,7 +1005,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   attackPower: 20
-  attackSpeed: 0.5
+  attackSpeed: 0.3
   equipmentRoot: {fileID: 374172478}
   visualStack: {fileID: 467820780}
   extraCapacity: 0
@@ -1598,7 +1599,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1292321918094076656, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.068
+      value: -0.125
       objectReference: {fileID: 0}
     - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
       propertyPath: upgradeSteps.Array.size
@@ -1610,11 +1611,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
       propertyPath: upgradeSteps.Array.data[0].resourceName
-      value: Iron
+      value: Gold
       objectReference: {fileID: 0}
     - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
       propertyPath: upgradeSteps.Array.data[0].targetAmount
-      value: 1
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
       propertyPath: upgradeSteps.Array.data[1].resourceName
@@ -1683,10 +1684,6 @@ PrefabInstance:
     - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
       propertyPath: OnStepCompleted.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
-      objectReference: {fileID: 0}
-    - target: {fileID: 5849434570343516975, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0.4
       objectReference: {fileID: 0}
     - target: {fileID: 6204974759221392372, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
       propertyPath: m_LocalPosition.x
@@ -3139,11 +3136,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
       propertyPath: upgradeSteps.Array.data[0].resourceName
-      value: Iron
+      value: Gold
       objectReference: {fileID: 0}
     - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
       propertyPath: upgradeSteps.Array.data[0].targetAmount
-      value: 1
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 1554199426808404299, guid: c3a1ed5f4bfb0144cbfaad9457bdcf1d, type: 3}
       propertyPath: upgradeSteps.Array.data[1].targetAmount

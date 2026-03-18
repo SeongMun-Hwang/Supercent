@@ -158,6 +158,9 @@ MonoBehaviour:
   remainingAmountText: {fileID: 6620869407523428675}
   progressFillImage: {fileID: 8939466937739731240}
   resourceIconImage: {fileID: 1878232197107575791}
+  OnStepCompleted:
+    m_PersistentCalls:
+      m_Calls: []
   currentStepAmount: 0
   heldAmount: 0
 --- !u!1 &1164843519003935808
@@ -190,7 +193,7 @@ Transform:
   m_GameObject: {fileID: 1164843519003935808}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.5000001}
+  m_LocalPosition: {x: 0, y: 0, z: 0.4}
   m_LocalScale: {x: 1, y: 1, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -320,6 +323,9 @@ MonoBehaviour:
   remainingAmountText: {fileID: 6620869407523428675}
   progressFillImage: {fileID: 8939466937739731240}
   resourceIconImage: {fileID: 1878232197107575791}
+  OnStepCompleted:
+    m_PersistentCalls:
+      m_Calls: []
   currentStepAmount: 0
   heldAmount: 0
 --- !u!1 &3637303571958405755
@@ -601,7 +607,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5690697190581539690}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0}
+  m_LocalPosition: {x: 0, y: 0, z: -0.05}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -779,7 +785,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8439082266607877392}
   m_LocalRotation: {x: 0, y: 0, z: 1, w: 0}
-  m_LocalPosition: {x: 0, y: 0, z: -0.039}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.83206, y: 0.83206, z: 0.83206}
   m_ConstrainProportionsScale: 0
   m_Children:

@@ -6,6 +6,11 @@ public class FollowCamera : MonoBehaviour
     [SerializeField] private Vector3 offset = new Vector3(0, 10, -10);
     [SerializeField] private float smoothSpeed = 5f;
 
+
+    void Start()
+    {
+        Screen.SetResolution(720, 1280, FullScreenMode.Windowed);
+    }
     private void LateUpdate()
     {
         if (target == null) return;

@@ -129,25 +129,15 @@ public class Worker : MonoBehaviour
 
         if (_targetStack != null && !string.IsNullOrEmpty(_carriedResourceName))
         {
-            // [수정] 스택에 할당된 자원 이름 확인
-            string assignedName = _targetStack.GetAssignedResourceName();
-            
-            // 만약 스택에 할당된 이름이 있고, 내가 들고 있는 자원과 같다면 플랫폼의 수령 로직 실행
-            ResourceSubmissionPlatform submissionPlatform = _targetStack.GetComponentInParent<ResourceSubmissionPlatform>();
+            var submissionPlatform = _targetStack.GetSubmissionPlatform();
 
-            Debug.Log($"[Worker] platform: {submissionPlatform != null}");
-            Debug.Log($"[Worker] assignedName: {assignedName}");
-            Debug.Log($"[Worker] carried: {_carriedResourceName}");
-
-            if (submissionPlatform != null && !string.IsNullOrEmpty(assignedName) &&
-                assignedName.Trim() == _carriedResourceName.Trim())
+            if (submissionPlatform != null)
             {
-                submissionPlatform.AddHeldAmountDirectly(_carriedResourceName, 1, carryRoot.transform.position);
+                submissionPlatform.AddHeldAmountDirectly(_carriedResourceName, 1, carryRoot.position);
             }
             else
             {
-                // 일반 스택이거나 이름이 매칭되지 않을 경우 기본 동작
-                _targetStack.AddWithAnimation(_carriedResourceName, carryRoot.transform.position);
+                _targetStack.AddWithAnimation(_carriedResourceName, carryRoot.position);
             }
         }
 

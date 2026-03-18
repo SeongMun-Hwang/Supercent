@@ -17,7 +17,11 @@ public class ResourceStack : MonoBehaviour
     [SerializeField] private float jumpHeight = 1.5f;
 
     [SerializeField] private Transform root;
-
+    [SerializeField] private ResourceSubmissionPlatform resourceSubmissionPlatform;
+    public ResourceSubmissionPlatform GetSubmissionPlatform()
+    {
+        return resourceSubmissionPlatform;
+    }
     private string _assignedResourceName; // [추가] 이 스택이 담당하는 자원 이름
 
     public void SetAssignedResourceName(string resName) => _assignedResourceName = resName;
