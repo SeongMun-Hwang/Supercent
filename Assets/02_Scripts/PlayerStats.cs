@@ -27,7 +27,6 @@ public class PlayerStats : MonoBehaviour
 
     private ResourcePlatform _currentHarvestTarget;
     private float _harvestTimer;
-
     private Coroutine _fadeCoroutine;
     private Vector3 _originalMaxTextPos;
 
@@ -48,14 +47,12 @@ public class PlayerStats : MonoBehaviour
     public bool RequestHarvestPermission(ResourcePlatform platform)
     {
         if (HasEquipment()) return true;
-
         if (_currentHarvestTarget == null)
         {
             _currentHarvestTarget = platform;
             _harvestTimer = 0;
             return true;
         }
-
         return _currentHarvestTarget == platform;
     }
 
@@ -71,33 +68,28 @@ public class PlayerStats : MonoBehaviour
     public bool CanHarvest()
     {
         _harvestTimer += Time.deltaTime;
-
         if (_harvestTimer >= attackSpeed)
         {
             _harvestTimer = 0;
             return true;
         }
-
         return false;
     }
 
     public int GetResourceLimit(string resourceName)
     {
         int baseLimit = 10;
-
         if (ResourceDatabase.Instance != null)
             baseLimit = ResourceDatabase.Instance.GetMaxCount(resourceName);
-
         return baseLimit + extraCapacity;
     }
 
     public void UpgradeMaxCapacity(int amount)
     {
         extraCapacity += amount;
-        Debug.Log($"[PlayerStats] Max Capacity Upgraded! New Extra: {extraCapacity}");
     }
 
-    public void AddResource(string resourceName, int amount)
+    public void AddResource(string resourceName, int amount, Vector3 startWorldPos = default)
     {
         int current = GetResourceCount(resourceName);
         int limit = GetResourceLimit(resourceName);
@@ -109,22 +101,22 @@ public class PlayerStats : MonoBehaviour
         }
 
         int canAdd = Mathf.Clamp(amount, 0, limit - current);
-
-        if (canAdd <= 0)
+        if (canAdd <= 0) 
         {
             ShowMaxCapacityFeedback();
             return;
         }
 
-        if (_inventory.ContainsKey(resourceName))
-            _inventory[resourceName] += canAdd;
-        else
-            _inventory.Add(resourceName, canAdd);
+        if (_inventory.ContainsKey(resourceName)) _inventory[resourceName] += canAdd;
+        else _inventory.Add(resourceName, canAdd);
 
         if (visualStack != null)
         {
             for (int i = 0; i < canAdd; i++)
-                visualStack.Add(resourceName);
+            {
+                Vector3 spawnPos = (startWorldPos == default) ? transform.position : startWorldPos;
+                visualStack.AddWithAnimation(resourceName, spawnPos);
+            }
         }
     }
 
@@ -138,7 +130,6 @@ public class PlayerStats : MonoBehaviour
         if (_inventory.ContainsKey(resourceName))
         {
             _inventory[resourceName] -= amount;
-
             if (visualStack != null)
             {
                 for (int i = 0; i < amount; i++)
@@ -150,39 +141,28 @@ public class PlayerStats : MonoBehaviour
     public void ShowMaxCapacityFeedback()
     {
         if (fullCapacityText == null) return;
-
-        if (_fadeCoroutine != null)
-            StopCoroutine(_fadeCoroutine);
-
+        if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
         _fadeCoroutine = StartCoroutine(FadeOutTextRoutine());
     }
 
     private IEnumerator FadeOutTextRoutine()
     {
         fullCapacityText.gameObject.SetActive(true);
-
         Color color = fullCapacityText.color;
-
         float elapsed = 0;
-
         while (elapsed < fadeDuration)
         {
             elapsed += Time.deltaTime;
-
             float t = elapsed / fadeDuration;
-
             fullCapacityText.color = new Color(color.r, color.g, color.b, 1.0f - t);
             fullCapacityText.transform.localPosition = _originalMaxTextPos + new Vector3(0, t * 1.0f, 0);
-
             yield return null;
         }
-
         fullCapacityText.gameObject.SetActive(false);
         fullCapacityText.transform.localPosition = _originalMaxTextPos;
     }
 
     public void UpgradeAttackPower(float amount) => attackPower += amount;
-
     public void UpgradeAttackSpeed(float amount)
     {
         attackSpeed += amount;

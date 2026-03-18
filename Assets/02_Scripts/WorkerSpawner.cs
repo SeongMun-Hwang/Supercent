@@ -24,13 +24,14 @@ public class WorkerSpawner : MonoBehaviour
         foreach (Transform pos in spawnPositions)
         {
             GameObject obj = Instantiate(workerPrefab, pos.position, Quaternion.identity);
+            SetTagRecursive(obj, "Untagged"); // 모든 자식까지 태그 초기화하여 플랫폼 오작동 방지
             Worker worker = obj.GetComponent<Worker>();
 
             if (worker != null)
             {
                 worker.Initialize(
-                    pointA.GetComponent<ResourceStack>(),
-                    pointB.GetComponent<ResourceStack>(),
+                    sourceStack,
+                    targetStack,
                     pointA.position,
                     pointB.position
                 );
@@ -42,5 +43,14 @@ public class WorkerSpawner : MonoBehaviour
         }
 
         Debug.Log($"[WorkerSpawner] Successfully spawned {spawnPositions.Count} workers.");
+    }
+
+    private void SetTagRecursive(GameObject obj, string tag)
+    {
+        obj.tag = tag;
+        foreach (Transform child in obj.transform)
+        {
+            SetTagRecursive(child.gameObject, tag);
+        }
     }
 }

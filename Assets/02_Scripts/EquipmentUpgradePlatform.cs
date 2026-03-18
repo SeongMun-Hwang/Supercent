@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Events; // 추가
+using UnityEngine.Events;
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -35,7 +35,7 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
     [SerializeField] private Image resourceIconImage; 
 
     [Header("Events")]
-    public UnityEvent OnStepCompleted; // 단계 완료 시 Miner 소환 등을 연결
+    public UnityEvent OnStepCompleted; 
 
     [Header("Current Progress")]
     [SerializeField] private int currentStepAmount = 0; 
@@ -137,8 +137,9 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
         {
             int amountToTake = Mathf.Min(playerHas, transferBatchSize, maxCanTake);
             PlayerStats.Instance.SpendResource(currentStep.resourceName, amountToTake);
-            heldAmount += amountToTake;
-            UpdateUI();
+            
+            // 전송 위치와 함께 주입
+            AddHeldAmountDirectly(currentStep.resourceName, amountToTake, PlayerStats.Instance.transform.position);
         }
     }
 
@@ -163,8 +164,6 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
     private void CompleteStep(UpgradeStep step)
     {
         ApplyUpgrade(step);
-
-        // 이벤트 실행 (Miner 소환 등)
         OnStepCompleted?.Invoke();
 
         currentStepIndex++;
@@ -244,13 +243,13 @@ public class EquipmentUpgradePlatform : MonoBehaviour, IPlatformAction
         }
     }
 
-    // Miner 전용: 외부 자원 주입
-    public void AddHeldAmountDirectly(string rName, int amount)
+    public void AddHeldAmountDirectly(string rName, int amount, Vector3 startPos = default)
     {
         if (currentStepIndex >= upgradeSteps.Count) return;
         if (rName != upgradeSteps[currentStepIndex].resourceName) return;
 
         heldAmount += amount;
+        // 나중에 이 플랫폼에 HeldStack 비주얼이 추가되면 여기서 AddWithAnimation 호출 가능
         UpdateUI();
     }
 }

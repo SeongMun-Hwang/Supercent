@@ -10,7 +10,6 @@ public class Worker : MonoBehaviour
     [Header("Work Settings")]
     [SerializeField] private float loadDelay = 0.5f;   // 자원을 집는 시간
     [SerializeField] private float unloadDelay = 0.5f; // 자원을 내려놓는 시간
-    [SerializeField] private string resourceName = "Iron"; // 옮길 자원 이름
 
     [Header("Visuals")]
     [SerializeField] private Animator animator;
@@ -20,11 +19,13 @@ public class Worker : MonoBehaviour
     private ResourceStack _targetStack;
     private Vector3 _posA;
     private Vector3 _posB;
+    private Vector3 _spawnPos; // 소환된 초기 위치
     private Vector3 _currentTargetPos;
 
     private bool _hasResource = false;
     private bool _isWorking = false;
     private bool _isInitialized = false;
+    private string _carriedResourceName; // 현재 들고 있는 자원의 이름
     private GameObject _carriedVisual;
 
     public void Initialize(ResourceStack source, ResourceStack target, Vector3 posA, Vector3 posB)
@@ -33,6 +34,7 @@ public class Worker : MonoBehaviour
         _targetStack = target;
         _posA = posA;
         _posB = posB;
+        _spawnPos = transform.position; // 소환 시점의 위치 저장
 
         // 스폰 위치는 유지하고 첫 목표만 B로 설정
         _currentTargetPos = _posB;
@@ -70,14 +72,14 @@ public class Worker : MonoBehaviour
             }
             else
             {
-                // [수정] 자원이 없으면 Target(B)에서 대기
-                target = _posB;
+                // [수정] 자원이 없으면 소환된 위치(_spawnPos)에서 대기
+                target = _spawnPos;
                 
-                // 대기 중일 때는 이동 애니메이션 정지 및 A를 바라보게 설정
-                if (Vector3.Distance(transform.position, _posB) < reachThreshold)
+                // 대기 지점 도착 시 애니메이션 정지
+                if (Vector3.Distance(transform.position, _spawnPos) < reachThreshold)
                 {
                     if (animator != null) animator.SetFloat("moveSpeed", 0f);
-                    RotateTowards(_posA); // 다음 작업을 위해 A를 주시
+                    RotateTowards(_posA); // 다음 작업을 위해 자원 생성 위치를 주시
                     return;
                 }
             }
@@ -102,15 +104,18 @@ public class Worker : MonoBehaviour
         _isWorking = true;
         if (animator != null) animator.SetFloat("moveSpeed", 0f);
 
-        // Source에 자원이 생길 때까지 대기 (선택 사항: 없으면 그냥 계속 대기)
-        // 여기서는 간단하게 딜레이 후 시도
         yield return new WaitForSeconds(loadDelay);
 
-        // 실제 스택에서 자원 제거 시도 (시각적 로직은 생략하거나 추가 가능)
-        // 원본 Stack에 데이터 기반 제거 로직이 필요할 수 있음
-        // 지금은 무조건 생성하는 방식으로 예시 구현
-        _hasResource = true;
-        CreateCarriedVisual();
+        // [수정] 스택에서 실제로 어떤 자원이든 하나를 가져옴
+        if (_sourceStack != null)
+        {
+            _carriedResourceName = _sourceStack.PopResourceName();
+            if (!string.IsNullOrEmpty(_carriedResourceName))
+            {
+                _hasResource = true;
+                CreateCarriedVisual();
+            }
+        }
 
         _isWorking = false;
     }
@@ -122,12 +127,32 @@ public class Worker : MonoBehaviour
 
         yield return new WaitForSeconds(unloadDelay);
 
-        if (_targetStack != null)
+        if (_targetStack != null && !string.IsNullOrEmpty(_carriedResourceName))
         {
-            _targetStack.Add(resourceName);
+            // [수정] 스택에 할당된 자원 이름 확인
+            string assignedName = _targetStack.GetAssignedResourceName();
+            
+            // 만약 스택에 할당된 이름이 있고, 내가 들고 있는 자원과 같다면 플랫폼의 수령 로직 실행
+            ResourceSubmissionPlatform submissionPlatform = _targetStack.GetComponentInParent<ResourceSubmissionPlatform>();
+
+            Debug.Log($"[Worker] platform: {submissionPlatform != null}");
+            Debug.Log($"[Worker] assignedName: {assignedName}");
+            Debug.Log($"[Worker] carried: {_carriedResourceName}");
+
+            if (submissionPlatform != null && !string.IsNullOrEmpty(assignedName) &&
+                assignedName.Trim() == _carriedResourceName.Trim())
+            {
+                submissionPlatform.AddHeldAmountDirectly(_carriedResourceName, 1, carryRoot.transform.position);
+            }
+            else
+            {
+                // 일반 스택이거나 이름이 매칭되지 않을 경우 기본 동작
+                _targetStack.AddWithAnimation(_carriedResourceName, carryRoot.transform.position);
+            }
         }
 
         _hasResource = false;
+        _carriedResourceName = null;
         if (_carriedVisual != null) Destroy(_carriedVisual);
 
         _isWorking = false;
@@ -135,13 +160,12 @@ public class Worker : MonoBehaviour
 
     private void CreateCarriedVisual()
     {
-        if (ResourceDatabase.Instance == null) return;
-        GameObject prefab = ResourceDatabase.Instance.GetPrefab(resourceName);
+        if (ResourceDatabase.Instance == null || string.IsNullOrEmpty(_carriedResourceName)) return;
+        GameObject prefab = ResourceDatabase.Instance.GetPrefab(_carriedResourceName);
         if (prefab != null && carryRoot != null)
         {
             _carriedVisual = Instantiate(prefab, carryRoot);
             _carriedVisual.transform.localPosition = Vector3.zero;
-            _carriedVisual.transform.localRotation = Quaternion.identity;
         }
     }
 

@@ -64,7 +64,6 @@ public class Miner : MonoBehaviour
 
         if (Vector3.Distance(transform.position, _currentTargetPos) < reachThreshold)
         {
-            // 타겟 지점 교체 (왕복)
             _currentTargetPos = (_currentTargetPos == _destPos) ? _spawnPos : _destPos;
             RotateTowards(_currentTargetPos);
         }
@@ -84,7 +83,7 @@ public class Miner : MonoBehaviour
         if (_isMining) return;
 
         ResourcePlatform platform = other.GetComponent<ResourcePlatform>();
-        if (platform != null)
+        if (platform != null && !platform.IsHarvested())
         {
             _miningTarget = platform;
             _isMining = true;
@@ -106,20 +105,19 @@ public class Miner : MonoBehaviour
         if (_timer >= attackInterval)
         {
             _timer = 0;
-
+            
             if (animator != null) animator.SetTrigger("Attack");
 
             int gained = _miningTarget.TakeExternalDamage(attackPower);
-
             if (gained > 0)
             {
-                if (_targetSubmission != null)
-                    _targetSubmission.AddHeldAmountDirectly(_miningTarget.GetResourceName(), gained);
-                else if (_targetUpgrade != null)
-                    _targetUpgrade.AddHeldAmountDirectly(_miningTarget.GetResourceName(), gained);
-
-                _isMining = false;
+                if (_targetSubmission != null) 
+                    _targetSubmission.AddHeldAmountDirectly(_miningTarget.GetResourceName(), gained, transform.position);
+                else if (_targetUpgrade != null) 
+                    _targetUpgrade.AddHeldAmountDirectly(_miningTarget.GetResourceName(), gained, transform.position);
+                
                 _miningTarget = null;
+                _isMining = false;
             }
         }
     }

@@ -51,16 +51,23 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
 
     private void Start()
     {
+        // [수정] 각 스택에 담당 자원 이름 할당
+        if (heldStack != null) heldStack.SetAssignedResourceName(resourceName);
+        if (outputStack != null) outputStack.SetAssignedResourceName(outputResourceName);
+
         UpdateResourceIcons();
         UpdateProgressTexts();
     }
 
     private void Update()
     {
-        bool isTransferring = _isPlayerOnPlatform && PlayerStats.Instance != null && PlayerStats.Instance.GetResourceCount(resourceName) > 0;
-        if (!isConverter && !isRepeatable && (currentAmount + heldAmount) >= targetAmount) isTransferring = false;
+        // 플레이어가 자원을 옮기고 있는 중인지 확인
+        bool isPlayerTransferring = _isPlayerOnPlatform && PlayerStats.Instance != null && PlayerStats.Instance.GetResourceCount(resourceName) > 0;
+        
+        if (!isConverter && !isRepeatable && (currentAmount + heldAmount) >= targetAmount) isPlayerTransferring = false;
 
-        if (!_isCompleted && heldAmount > 0 && !isTransferring)
+        // [수정] 이미 수령된 자원(heldAmount)은 플레이어의 위치 여부와 상관없이 항상 변환을 시도함
+        if (!_isCompleted && heldAmount > 0)
         {
             _processTimer += Time.deltaTime;
             if (_processTimer >= platformToTargetInterval)
@@ -76,6 +83,7 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         if (_isCompleted && !isRepeatable) return;
         _isPlayerOnPlatform = true;
         _transferTimer = 0;
+        Debug.Log($"[SubmissionPlatform] Player Entered: {player.name}");
     }
 
     public void OnPlayerStay(GameObject player)
@@ -89,7 +97,11 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         }
     }
 
-    public void OnPlayerExit(GameObject player) => _isPlayerOnPlatform = false;
+    public void OnPlayerExit(GameObject player)
+    {
+        _isPlayerOnPlatform = false;
+        Debug.Log($"[SubmissionPlatform] Player Exited: {player.name}");
+    }
 
     private void TryTransferFromPlayer()
     {
@@ -104,9 +116,9 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
             if (!isConverter && !isRepeatable) amountToTake = Mathf.Min(amountToTake, maxCanTake);
 
             PlayerStats.Instance.SpendResource(resourceName, amountToTake);
-            heldAmount += amountToTake;
-            if (heldStack != null) for (int i = 0; i < amountToTake; i++) heldStack.Add(resourceName);
-            UpdateProgressTexts();
+            
+            // [수정] 직접 호출 메서드 사용으로 일관성 유지
+            AddHeldAmountDirectly(resourceName, amountToTake, PlayerStats.Instance.transform.position);
         }
     }
 
@@ -115,11 +127,13 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         if (heldAmount > 0)
         {
             heldAmount--;
-            if (heldStack != null) heldStack.Remove(resourceName);
+            // [수정] 스택에 할당된 이름을 사용하여 제거
+            if (heldStack != null) heldStack.RemoveOne();
             
             if (isConverter)
             {
                 convertedAmount++; 
+                // [수정] 변환 시 출력 스택에 할당된 이름을 사용하여 추가
                 if (outputStack != null) outputStack.Add(outputResourceName);
             }
             else
@@ -135,7 +149,13 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
     {
         OnTargetReached?.Invoke();
         if (isRepeatable) currentAmount -= targetAmount;
-        else { _isCompleted = true; heldAmount = 0; if (heldStack != null) heldStack.Clear(); currentAmount = targetAmount; }
+        else 
+        { 
+            _isCompleted = true; 
+            heldAmount = 0; 
+            if (heldStack != null) heldStack.Clear(); 
+            currentAmount = targetAmount; 
+        }
         UpdateProgressTexts();
     }
 
@@ -171,7 +191,11 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
         }
 
         int canTake = Mathf.Min(convertedAmount, limit - current);
-        PlayerStats.Instance.AddResource(outputResourceName, canTake);
+        
+        // 시작 위치를 OutputArea의 위치로 설정
+        Vector3 startPos = (outputArea != null) ? outputArea.transform.position : transform.position;
+        PlayerStats.Instance.AddResource(outputResourceName, canTake, startPos);
+        
         convertedAmount -= canTake;
         if (outputStack != null) for (int i = 0; i < canTake; i++) outputStack.Remove(outputResourceName);
         UpdateProgressTexts();
@@ -190,7 +214,10 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
             return;
         }
 
-        PlayerStats.Instance.AddResource(outputResourceName, 1);
+        // 시작 위치를 OutputArea의 위치로 설정
+        Vector3 startPos = (outputArea != null) ? outputArea.transform.position : transform.position;
+        PlayerStats.Instance.AddResource(outputResourceName, 1, startPos);
+        
         convertedAmount--;
         if (outputStack != null) outputStack.Remove(outputResourceName);
         UpdateProgressTexts();
@@ -198,21 +225,33 @@ public class ResourceSubmissionPlatform : MonoBehaviour, IPlatformAction
 
     public void ResetProgress()
     {
-        currentAmount = 0; heldAmount = 0; convertedAmount = 0; _isCompleted = false;
+        currentAmount = 0; 
+        heldAmount = 0; 
+        convertedAmount = 0; 
+        _isCompleted = false;
         if (heldStack != null) heldStack.Clear();
         if (outputStack != null) outputStack.Clear();
         UpdateProgressTexts();
     }
 
-    // Miner 전용: 플레이어를 거치지 않고 바로 플랫폼 저장소로 추가
-    public void AddHeldAmountDirectly(string rName, int amount)
+    public void AddHeldAmountDirectly(string rName, int amount, Vector3 startPos = default)
     {
-        if (rName != resourceName) return; // 변환기/제출기 자원과 다르면 무시
+        // [수정] 자원 이름 검사를 더 유연하게 처리
+        if (string.IsNullOrEmpty(rName) || rName.Trim().ToLower() != resourceName.Trim().ToLower()) 
+        {
+            Debug.LogWarning($"[Submission] Rejected: {rName}. Expected: {resourceName}");
+            return;
+        }
 
         heldAmount += amount;
         if (heldStack != null)
         {
-            for (int i = 0; i < amount; i++) heldStack.Add(rName);
+            Vector3 sPos = (startPos == default) ? transform.position : startPos;
+            for (int i = 0; i < amount; i++) 
+            {
+                // [수정] 스택에 할당된 이름을 사용하여 애니메이션 추가
+                heldStack.AddWithAnimation(sPos);
+            }
         }
         UpdateProgressTexts();
     }
